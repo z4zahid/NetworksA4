@@ -1,0 +1,22 @@
+should be able to get away with constant-sized send & receive windows 
+
+When evilKind == 2, ucpSendTo() returns as though it successfully sent all bytes of the packet, but in actuality sent nothing. In this case, if the receiver is expecting to receive something, and you haven't set a timeout on the socket, it can block indefinitely on ucpRecvFrom(). If you have a single-threaded implementation, ucpSetSockRecvTimeout maybe necessary
+
+Do we need to deal with the case where the remote side of a connection is closed while we are blocking on a call to rcsSend() or rcsRecv()? If so, how do we report this event to the application? 
+	Yes. But the server/client will invoke rcsClose() to indicate that the
+	connection should be terminated. rcsSend()/rcvRecv() at the other end
+	should unblock and return with -1, and errno should be set
+	appropriately. In this case, an appropriate value for errno would be
+	ECONNRESET or ENOTCONN (see man send(2)).
+
+********************************************************************
+
+HINT
+
+An RCS socket that is returned by rcsSocket() does not have to be a conventional socket. It can be whatever
+you want it to be. (But of course, it has to be of type int.) For example, the integer you return can be an
+index into an array, where each entry of the array is of type a data structure that you define.
+Of course, there is some mapping between an RCS socket and a UCP socket. But it does not have to be
+one-to-one. Let s be an RCS socket. You may, for example, create a UCP socket when s is created. That is,
+underlying rcsSocket() is a call to ucpSocket(). However, you may choose to multiplex s and every socket
+that is returned by an rcsAccept() on s onto the same UCP socket.
