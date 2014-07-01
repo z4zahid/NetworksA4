@@ -11,14 +11,12 @@ Each should return -1 on error and set errno appropriately.
 
 //used to allocate an RCS socket. Returns a socket descriptor (positive integer) on success
 int rcsSocket() {
-	
+	return ucpSocket();
 } 
 
 //binds an RCS socket (first argument) to the address structure (second argument)
 int rcsBind(int socketID, const struct sockaddr_in * addr) {
-
-	//sucess
-	return 0;
+    return ucpBind(socketID, addr)
 }
 
 //fills address information into the second argument with which an RCS socket (first argument) has been 
