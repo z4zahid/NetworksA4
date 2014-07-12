@@ -26,15 +26,16 @@ using namespace std;
 char serverSeq = 0;
 char clientSeq = 0;
 
-// vector of sockets
-vector<struct sockaddr_in> sockets;
+
 
 struct Connection {
-	sockaddr_in sendTo;
-	int ack;
-	int seq;
-	int fd;
+	sockaddr_in destination;
+    int socketID;
+	bool ack;
 };
+
+// vector of sockets
+vector<struct Connection> connections;
 
 
 /*
@@ -77,18 +78,19 @@ int rcsListen(int socketID) {
 // Returns descriptor to new RCS socket that can be used to rcsSend() and rcsRecv() with the peer (client).
 int rcsAccept(int socketID, struct sockaddr_in *addr) {
     char receiveBuf[BUFFER_SIZE];
-
+    Connection connection;
+    
     // Blocking call until we get SYN request
     while (true) {
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, addr);
         if (receiveBuf[SYN_BIT] == SYN_SET) {
-            // Add SYN to th
-            sockets.push_back(*addr);
+            connection.destination = *addr;
+            connection.socketID = socketID;
             break;
         }
     }
     
-    // Set the sequence number and ACK of the buffer
+    // Create SYNACK and add sequence number
     char seq_num = serverSeq++;
     char ack_num = receiveBuf[SEQ_NUM] + 1;
     char sendBuf[BUFFER_SIZE];
@@ -100,16 +102,17 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     ucpSetSockRecvTimeout(socketID, 1000);
     memset(receiveBuf, 0, BUFFER_SIZE);
     
-    // Send a SYNACK to the client and
-    // Wait for an ACK from client
     struct sockaddr_in * ackAddr;
     while (true) {
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, addr);
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, ackAddr);
         if (receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
+            connection.ack = true;
+            connections.push_back(connection);
             break;
         }
     }
+    
     return 0;
 }
 
@@ -127,6 +130,8 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     
     char receiveBuf[BUFFER_SIZE];
     struct sockaddr_in serverAddr = *addr;
+    
+    // TODO: check if 
     
     // Send SYN to server and wait for ACK from the server
     while (true) {
@@ -146,7 +151,6 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     
     // Send ACK to the server
     ucpSendTo(socketID, buf, BUFFER_SIZE, addr);
-
     
 	//success
 	return 0;
@@ -178,6 +182,14 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
 //closes an RCS socket descriptor
 int rcsClose(int socketID) {
+    
+    // Remove the socket
+    for (int i = 0 ; i < connections.size(); i++) {
+        if ((connections.at(i)).socketID == socketID) {
+            connections.erase(connections.begin() + i);
+            break;
+        }
+    }
 	return ucpClose(socketID);
 } 
 
