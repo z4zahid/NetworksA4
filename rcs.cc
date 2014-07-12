@@ -75,9 +75,7 @@ int rcsBind(int socketID, const struct sockaddr_in * addr) {
 //fills address information into the second argument with which an RCS socket (first argument) has been 
 //bound via a call to rcsBind()
 int rcsGetSockName(int socketID, struct sockaddr_in * addr){
-
-	//success
-	return 0;
+    return ucpGetSockName(socketID, addr);
 }
 
 //marks an RCS socket (the argument) as listening for connection requests

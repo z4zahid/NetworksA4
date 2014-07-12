@@ -40,9 +40,8 @@ int ucpSocket()
     return(socket(AF_INET, SOCK_DGRAM, 0));
 }
 
-int ucpBind(int sockfd, const struct sockaddr_in *addr) {
-    return(bind(sockfd, (const struct sockaddr *)addr,
-		    (socklen_t)sizeof(struct sockaddr_in)));
+int ucpBind(int sockfd, struct sockaddr_in *addr) {
+    return(mybind(sockfd, addr));
 }
 
 int ucpGetSockName(int sockfd, struct sockaddr_in *addr)
