@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -19,14 +20,7 @@
 #define ACK_SET 'a'
 #define SYN_SET 's'
 
-// MUTEX
-
 using namespace std;
-
-char serverSeq = 0;
-char clientSeq = 0;
-
-
 
 struct Connection {
 	sockaddr_in destination;
@@ -34,8 +28,31 @@ struct Connection {
 	bool ack;
 };
 
+char serverSeq = 0;
+char clientSeq = 0;
+
+pthread_mutex_t lock;
+int counter;
+
 // vector of sockets
 vector<struct Connection> connections;
+
+void addConnection(struct Connection connection) {
+    pthread_mutex_lock(&lock);
+    connections.push_back(connection);
+    pthread_mutex_unlock(&lock);
+}
+
+void removeConnection(int socketID) {
+    pthread_mutex_lock(&lock);
+    for (int i = 0 ; i < connections.size(); i++) {
+        if ((connections.at(i)).socketID == socketID) {
+            connections.erase(connections.begin() + i);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&lock);
+}
 
 
 /*
@@ -108,7 +125,7 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, ackAddr);
         if (receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
             connection.ack = true;
-            connections.push_back(connection);
+            addConnection(connection);
             break;
         }
     }
@@ -182,14 +199,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
 //closes an RCS socket descriptor
 int rcsClose(int socketID) {
-    
-    // Remove the socket
-    for (int i = 0 ; i < connections.size(); i++) {
-        if ((connections.at(i)).socketID == socketID) {
-            connections.erase(connections.begin() + i);
-            break;
-        }
-    }
+    removeConnection(socketID);
 	return ucpClose(socketID);
 } 
 
