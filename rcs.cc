@@ -87,9 +87,7 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     
     // Blocking call until we get SYN request
     while (true) {
-	cout << "ucp recv for accept" << endl;
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, addr);
-	
         if (receiveBuf[SYN_BIT] == SYN_SET) {
             connection.destination = *addr;
             connection.socketID = socketID;
@@ -105,7 +103,6 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     sendBuf[ACK_BIT] = ACK_SET;
     sendBuf[ACK_NUM] = ack_num;
     sendBuf[SEQ_NUM] = seq_num;
-
     ucpSetSockRecvTimeout(socketID, 1000);
     memset(receiveBuf, 0, BUFFER_SIZE);
     
@@ -137,9 +134,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     
     char receiveBuf[BUFFER_SIZE];
     struct sockaddr_in serverAddr = *addr;
-    
-    // TODO: check if 
-    
+     
     // Send SYN to server and wait for ACK from the server
     while (true) {
         ucpSendTo(socketID, buf, BUFFER_SIZE, addr);
@@ -160,7 +155,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     ucpSendTo(socketID, buf, BUFFER_SIZE, addr);
     
 	//success
-	return 0;
+    return 0;
 }
 
 
