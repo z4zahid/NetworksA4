@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <string>
 
 #include "ucp_given.c"
 
@@ -212,6 +213,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
     int rcvBaseHi = (rcvBase + WINDOW_SIZE - 1);
 
     //TODO: what's our end condition? how do we know we've received the entire message?
+    //sender should send total packets in the msg as well
     while (true) {
         
         struct sockaddr_in addr;
@@ -222,17 +224,17 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
             if (packet.checksum + getSum(packet.data) == 0) {
 
                 ackPacket[0] = packet.sequenceNum;
-                ucpSendTo(socketID, ackPacket, 1, addr);
+                ucpSendTo(socketID, ackPacket, sizeof(ackPacket, addr);
 
-                ackBuffer[insertIndex] = packet;
-                insertIndex = (insertIndex + 1) % BUFFER_SIZE;
+                // ackBuffer[insertIndex] = packet;
+                // insertIndex = (insertIndex + 1) % BUFFER_SIZE;
 
                 if (curSequenceNum == rcvBase) {
                     // deliver this packet and any previously buffered and consecutively numbered packets
-                    while(readIndex != curSequenceNum) {
-                        rcvBuffer[curSequenceNum] = ackBuffer[readIndex].packet;
-                        readIndex = (readIndex + 1) % BUFFER_SIZE; 
-                    }
+                    // while(readIndex != curSequenceNum) {
+                    //     rcvBuffer[curSequenceNum] = ackBuffer[readIndex].packet;
+                    //     readIndex = (readIndex + 1) % BUFFER_SIZE; 
+                    // }
                     // moved receive window forward by the number of packets delivered
                     rcvBase++;
                     rcvBaseHi++;
@@ -242,7 +244,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         } else if (packet.sequenceNum >= (rcvBase - WINDOW_SIZE) && packet.sequenceNum <= (rcvBase - 1)) {
             //return ACK to sender even though we've already ACKED before
             ackPacket[0] = packet.sequenceNum;
-            ucpSendTo(socketID, ackPacket, 1, addr); 
+            ucpSendTo(socketID, ackPacket, sizeof(ackPacket), addr); 
         } else {
             //ignore
         }
@@ -265,8 +267,16 @@ int getChecksum(const void* packet) {
 
 // use memset to get the next x bytes from sendBuffer
 // create data packet with the next x number of bytes
-void* getNextPacket(const void* sendBuffer, int seqNum) {
+void* getNextPacket(const void* sendBuffer, int seqNum, void* packet) {
+    int index = seqNum*MAX_PACKET_SIZE, i;
 
+    char* iterate = (char*)sendBuffer;
+    for (i=0; i<index; i++){
+        iterate++;
+    }
+
+    //TODO: what if there isn't max_packet_size left? add null to the end??
+    memcpy ((void*)iterate, packet, MAX_PACKET_SIZE);
 }
 
 /* evilKind == 0 -- send only part of the bytes 
@@ -278,8 +288,8 @@ void* getNextPacket(const void* sendBuffer, int seqNum) {
 // non-negative return value, then we know that so many bytes were reliably received by the other end
 int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     
-    //TODO: whats the maximum number of times we retransmit a packet before we ignore it?
-    
+    //TODO: whats the maximum number of times we retransmit a packet before we ignore it? 10 times
+
     int numPackets = numBytes/MAX_PACKET_SIZE;
     if (numBytes % MAX_PACKET_SIZE > 0) {
         numPackets++;
@@ -321,9 +331,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             if (seq >= curWindowLo && seq <= curWindowHi) {
                 packetsReceived++;
                 rcvPackets[seq] = 1;
-            } else {
-                //TODO: what happens here? I beleive we ignore this
-            }
+            } 
 
             // if this packet's sequence number = send_base
             if (seq == curWindowLo) {
