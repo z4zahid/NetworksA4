@@ -8,13 +8,15 @@
 #define ACK_BIT 1
 #define SEQ_NUM 2
 #define ACK_NUM 3
-#define DATA_INDEX 4
-#define HEADER_SIZE 5
+#define CHK_SUM 4
+#define DATA_INDEX 5
+#define HEADER_SIZE 6
 
-#define BUFFER_SIZE 517 // 512 + HEADER_SIZE
+#define BUFFER_SIZE 518 // 512 + HEADER_SIZE
 
 #define ACK_SET 'a'
 #define SYN_SET 's'
+#define CHK_SET 'c'
 
 using namespace std;
 
@@ -88,9 +90,10 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     // Blocking call until we get SYN request
     while (true) {
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, addr);
-        if (receiveBuf[SYN_BIT] == SYN_SET) {
+        if (receiveBuf[SYN_BIT] == SYN_SET && receiveBuf[CHK_SUM] == CHK_SET) {
             connection.destination = *addr;
             connection.socketID = socketID;
+	    connection.ack = false;
             break;
         }
     }
@@ -103,16 +106,20 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     sendBuf[ACK_BIT] = ACK_SET;
     sendBuf[ACK_NUM] = ack_num;
     sendBuf[SEQ_NUM] = seq_num;
+    sendBuf[CHK_SUM] = CHK_SET;
     ucpSetSockRecvTimeout(socketID, 1000);
     memset(receiveBuf, 0, BUFFER_SIZE);
     
+
+    connection.ackNum = seq_num;
+    addConnection(connection);
+
     struct sockaddr_in * ackAddr;
     while (true) {
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, addr);
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, ackAddr);
-        if (receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
+        if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
             connection.ack = true;
-            addConnection(connection);
             break;
         }
     }
@@ -131,6 +138,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     char seq_num = clientSeq++;
     buf[SYN_BIT] = SYN_SET;
     buf[SEQ_NUM] = seq_num;
+    buf[CHK_SUM] = CHK_SET;
     
     char receiveBuf[BUFFER_SIZE];
     struct sockaddr_in serverAddr = *addr;
@@ -139,7 +147,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     while (true) {
         ucpSendTo(socketID, buf, BUFFER_SIZE, addr);
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, &serverAddr);
-        if (receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
+        if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
             break;
         }
     }
@@ -148,6 +156,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     char ack_num = receiveBuf[SEQ_NUM] + 1;
     buf[ACK_NUM] = ack_num;
     buf[ACK_BIT] = ACK_SET;
+    buf[CHK_SUM] = CHK_SET;
         
     memset(receiveBuf, 0, BUFFER_SIZE);
     

@@ -6,8 +6,9 @@
 
 struct Connection {
 	sockaddr_in destination;
-    int socketID;
+        int socketID;
 	bool ack;
+	int ackNum; // The ack number it's trying to get from the client
 };
 
 int rcsSocket();
