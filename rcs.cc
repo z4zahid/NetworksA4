@@ -1,12 +1,8 @@
+#include "ucp.c"
+#include "rcs.h"
+
 #include <iostream>
 #include <vector>
-#include <pthread.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#include "ucp_given.c"
-
 
 #define SYN_BIT 0
 #define ACK_BIT 1
@@ -21,12 +17,6 @@
 #define SYN_SET 's'
 
 using namespace std;
-
-struct Connection {
-	sockaddr_in destination;
-    int socketID;
-	bool ack;
-};
 
 char serverSeq = 0;
 char clientSeq = 0;
@@ -64,7 +54,7 @@ Each should return -1 on error and set errno appropriately.
 
 //used to allocate an RCS socket. Returns a socket descriptor (positive integer) on success
 int rcsSocket() {
-	return ucpSocket();
+   return ucpSocket();
 } 
 
 //binds an RCS socket (first argument) to the address structure (second argument)
@@ -97,7 +87,9 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     
     // Blocking call until we get SYN request
     while (true) {
+	cout << "ucp recv for accept" << endl;
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, addr);
+	
         if (receiveBuf[SYN_BIT] == SYN_SET) {
             connection.destination = *addr;
             connection.socketID = socketID;
