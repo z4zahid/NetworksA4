@@ -257,7 +257,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 AckPacket ack;
                 ack.sequenceNum = packet.sequenceNum;
                 ack.packetLen = packet.packetLen;
-                ucpSendTo(socketID, &ack, sizeof(AckPacket), addr); 
+                ucpSendTo(socketID, &ack, sizeof(AckPacket), &addr); 
             } else {
                 //ignore
             }
@@ -289,7 +289,7 @@ void sendDataPacket(int socketID, int seq) {
     pthread_mutex_unlock(&lock);
 }
 
-void populateConnectionDataPackets(const void sendBuffer, int numBytes, int socketID) {
+void populateConnectionDataPackets(const void* sendBuffer, int numBytes, int socketID) {
 
     int i = 0;
     int numPackets = getTotalPackets(numBytes);
