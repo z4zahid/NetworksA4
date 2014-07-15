@@ -224,10 +224,10 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 AckPacket ack;
                 ack.sequenceNum = packet.sequenceNum;
                 ack.packetLen = packet.packetLen;
-                ucpSendTo(socketID, &ack, sizeof(AckPacket), addr);
+                ucpSendTo(socketID, &ack, sizeof(AckPacket), &addr);
 
                 //If the packet was not previously received, it is buffered.
-                if (packets[packet.sequenceNum] != NULL) {
+                if (packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
                     bytesReceived += packet.packetLen;
                 }
@@ -235,7 +235,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 if (packet.sequenceNum == rcvBase) {
                     // deliver this packet and any previously buffered and consecutively numbered packets
                     int i = packet.sequenceNum;
-                    while(packets[i] != 0) {
+                    while(packets[i].sequenceNum < 0) {
 
                         DataPacket p = packets[i];
                         int index = p.sequenceNum*MAX_PACKET_SIZE;
@@ -257,7 +257,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 AckPacket ack;
                 ack.sequenceNum = packet.sequenceNum;
                 ack.packetLen = packet.packetLen;
-                ucpSendTo(socketID, &ack, sizeof(ackPacket), addr); 
+                ucpSendTo(socketID, &ack, sizeof(AckPacket), addr); 
             } else {
                 //ignore
             }
@@ -289,7 +289,7 @@ void sendDataPacket(int socketID, int seq) {
     pthread_mutex_unlock(&lock);
 }
 
-void populateConnectionDataPackets(const* void sendBuffer, int numBytes, int socketID) {
+void populateConnectionDataPackets(const void sendBuffer, int numBytes, int socketID) {
 
     int i = 0;
     int numPackets = getTotalPackets(numBytes);
