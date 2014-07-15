@@ -3,7 +3,7 @@
 # librcs.a. archive file that has all the RCS functions
 
 XCC = g++
-CFLAGS = -c
+CFLAGS  = -c
 SOURCES = mybind.c ucp.c rcs.cc
 
 all: librcs.a test
