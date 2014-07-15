@@ -27,6 +27,9 @@
 #define MAX_RETRANSMIT 5
 #define ACK_TIMEOUT 300
 
+#define SEQUENCE_NUM 0
+#define PACKET_LEN 1
+
 typedef struct datapacket {
     char data[MAX_PACKET_SIZE];
     int sequenceNum;
@@ -35,11 +38,6 @@ typedef struct datapacket {
     int packetLen;
     datapacket(): sequenceNum(-1) {}
 } DataPacket;
-
-typedef struct ackpacket {
-    int sequenceNum;
-    int packetLen;
-} AckPacket;
 
 typedef enum state {
     NEW,

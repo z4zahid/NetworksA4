@@ -156,6 +156,34 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     return 0;
 }
 
+void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr) {
+
+    int size = MAX_PACKET_SIZE + 16;
+    char data[size]; 
+    ucpRecvFrom(socketID, data, size, addr);
+
+    memcpy(packet->sequenceNum, data[0], sizeof(int));
+    memcpy(packet->totalBytes, data[4], sizeof(int));
+    memcpy(packet->checksum, data[8], sizeof(int));
+    memcpy(packet->packetLen, data[12], sizeof(int));
+    memcpy(packet->data, data[16], packet.packetLen);
+}
+
+void sendDataPacket(int socketID, DataPacket packet) {
+
+    int size = packet.packetLen + 16; //4 ints to be stored as chars
+    char data[size]; 
+    memset(data, 0, size);
+
+    memcpy(data[0], packet.sequenceNum, sizeof(int));
+    memcpy(data[4], packet.totalBytes, sizeof(int));
+    memcpy(data[8], packet.checksum, sizeof(int));
+    memcpy(data[12], packet.packetLen, sizeof(int));
+    memcpy(data[16], packet.data, packet.packetLen);
+
+    ucpSendTo(socketID, data, size, &getConnectionAddr(socketID));
+}
+
 int getTotalPackets(int numBytes) {
     int numPackets = numBytes/MAX_PACKET_SIZE;
     if (numBytes % MAX_PACKET_SIZE > 0) {
@@ -212,7 +240,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         
         DataPacket packet;
         struct sockaddr_in addr;
-        ucpRecvFrom(socketID, &packet, sizeof(DataPacket), &addr);
+        receiveDataPacket(socketID, &packet, &addr)
         
         if (expectedBytes == 0) {
             expectedBytes = packet.totalBytes;
@@ -223,10 +251,10 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         if (!IsPacketCorrupted(packet)) {
             if (packet.sequenceNum >= rcvBase && packet.sequenceNum <= rcvBaseHi) {
 
-                AckPacket ack;
-                ack.sequenceNum = packet.sequenceNum;
-                ack.packetLen = packet.packetLen;
-                ucpSendTo(socketID, &ack, sizeof(AckPacket), &addr);
+                int ack[2];
+                ack[SEQUENCE_NUM] = packet.sequenceNum;
+                ack[PACKET_LEN] = packet.packetLen;
+                ucpSendTo(socketID, &ack, sizeof(ack), &addr);
 
                 //If the packet was not previously received, it is buffered.
                 if (packets[packet.sequenceNum].sequenceNum < 0) {
@@ -240,7 +268,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                     while(packets[i].sequenceNum < 0) {
 
                         DataPacket p = packets[i];
-                        int index = i*MAX_PACKET_SIZE;
+                        int index = p.sequenceNum*MAX_PACKET_SIZE;
                         char* iterate = (char*)rcvBuffer;
                         for (i=0; i<index; i++){
                             iterate++;
@@ -257,10 +285,10 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 } 
             } else if (packet.sequenceNum >= (rcvBase - WINDOW_SIZE) && packet.sequenceNum <= (rcvBase - 1)) {
                 //return ACK to sender even though we've already ACKED before
-                AckPacket ack;
-                ack.sequenceNum = packet.sequenceNum;
-                ack.packetLen = packet.packetLen;
-                ucpSendTo(socketID, &ack, sizeof(AckPacket), &addr); 
+                int ack[2];
+                ack[SEQUENCE_NUM] = packet.sequenceNum;
+                ack[PACKET_LEN] = packet.packetLen;
+                ucpSendTo(socketID, &ack, sizeof(ack), &addr); 
             } else {
                 //ignore
             }
@@ -279,11 +307,10 @@ int allRetransmitsTimedOut(int retransmits[], int size) {
     return 1;
 }
 
-vector<DataPacket> populateConnectionDataPackets(const void* sendBuffer, int numBytes, int socketID) {
+void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vector<DataPacket>* packets) {
 
     int i = 0;
     int numPackets = getTotalPackets(numBytes);
-    vector<DataPacket> dataPackets;
 
     for (i = 0; i<numPackets;i++) {
         
@@ -302,10 +329,8 @@ vector<DataPacket> populateConnectionDataPackets(const void* sendBuffer, int num
         memcpy(dataPacket.data, iterate, dataPacket.packetLen);
         
         dataPacket.checksum = getChecksum(dataPacket.data);
-        dataPackets.push_back(dataPacket);
+        packets.push_back(dataPacket);
     }
-
-    return dataPackets;
 }
 
 /* evilKind == 0 -- send only part of the bytes 
@@ -319,12 +344,12 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     
     vector<DataPacket> dataPackets;
     int numPackets = getTotalPackets(numBytes);
-    dataPackets = new vector<DataPacket>(populateConnectionDataPackets(sendBuffer, numBytes, socketID));
+    populateDataPackets(sendBuffer, numBytes, socketID, &dataPackets);
 
     //let's send out all the packets and then we can wait for them
     int curSequenceNum = 0, i;
     for (i = 0; i<numPackets;i++) {
-        ucpSendTo(socketID, &dataPackets.at(i), sizeof(DataPacket), &getConnectionAddr(socketID));
+        sendDataPacket(socketID, dataPackets.at(i));
         curSequenceNum++;
     }
 
@@ -342,8 +367,8 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
         ucpSetSockRecvTimeout(socketID, ACK_TIMEOUT);
 
         struct sockaddr_in addr;
-        AckPacket ack;
-        ssize_t bytes = ucpRecvFrom(socketID, &ack, sizeof(AckPacket), &addr);
+        int ack[2];
+        ssize_t bytes = ucpRecvFrom(socketID, &ack, sizeof(ack), &addr);
         
         // ACK received:
         if (bytes > 0) {
@@ -374,7 +399,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                 // case 2: this is greater than the ACK we expect -> retransmit ones in middle
                 for (i = curWindowLo; i<seq;i++) {
                     if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
-                        ucpSendTo(socketID, &dataPackets.at(i), sizeof(DataPacket), &getConnectionAddr(socketID));
+                        sendDataPacket(socketID, dataPackets.at(i));
                         retransmits[i] = retransmits[i] + 1;
                     }
                 }
@@ -384,7 +409,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
             int i = curWindowLo;
             if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
-                ucpSendTo(socketID, &dataPackets.at(i), sizeof(DataPacket), &getConnectionAddr(socketID));
+                sendDataPacket(socketID, dataPackets.at(i));
                 retransmits[i] = retransmits[i] + 1;
             }
         }   
