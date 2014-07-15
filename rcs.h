@@ -36,6 +36,7 @@ typedef struct datapacket {
     int checksum;
     int totalBytes;
     int packetLen;
+    datapacket(): sequenceNum(-1) {}
 } DataPacket;
 
 typedef struct ackpacket {
