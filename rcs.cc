@@ -241,12 +241,11 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
 
                         DataPacket p = packets[i];
                         int index = i*MAX_PACKET_SIZE;
-                        char* iterate = (char*)sendBuffer;
+                        char* iterate = (char*)rcvBuffer;
                         for (i=0; i<index; i++){
                             iterate++;
                         }
 
-                        memset(iterate, p.data, p.packetLen);
                         memcpy(iterate, p.data, p.packetLen);
                     
                         i++;
@@ -280,7 +279,7 @@ int allRetransmitsTimedOut(int retransmits[], int size) {
     return 1;
 }
 
-void populateConnectionDataPackets(const void* sendBuffer, int numBytes, int socketID) {
+vector<DataPacket> populateConnectionDataPackets(const void* sendBuffer, int numBytes, int socketID) {
 
     int i = 0;
     int numPackets = getTotalPackets(numBytes);
