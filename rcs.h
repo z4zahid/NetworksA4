@@ -28,7 +28,7 @@
 #define ACK_TIMEOUT 300
 
 typedef struct datapacket {
-    void* data;
+    char data[MAX_PACKET_SIZE];
     int sequenceNum;
     int checksum;
     int totalBytes;
@@ -52,7 +52,6 @@ typedef struct conn {
     int socketID;
     bool ack;
 	int ackNum;
-    std::vector<DataPacket> dataPackets;
     State state; 
 } Connection;
 
