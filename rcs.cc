@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 #define SYN_BIT 0
 #define ACK_BIT 1
