@@ -1,6 +1,8 @@
 #ifndef _RCS_
 #define _RCS_
 
+#include <vector>
+
 #define SYN_BIT 0
 #define ACK_BIT 1
 #define SEQ_NUM 2
@@ -28,7 +30,7 @@ int counter;
 typedef struct datapacket {
     void* data;
     int sequenceNum;
-    int checksum;]
+    int checksum;
     int totalBytes;
     int packetLen;
 } DataPacket;
@@ -48,10 +50,10 @@ typedef struct connection {
     sockaddr_in destination;
     int socketID;
     bool ack;
-    vector<DataPacket> dataPackets;
+    std::vector<DataPacket> dataPackets;
     State state; 
 } Connection;
 
-vector<Connection> connections;
+std::vector<Connection> connections;
 
 #endif
