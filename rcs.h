@@ -2,6 +2,9 @@
 #define _RCS_
 
 #include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define SYN_BIT 0
 #define ACK_BIT 1
@@ -40,14 +43,14 @@ typedef struct ackpacket {
     int packetLen;
 } AckPacket;
 
-enum State {
+typedef enum state {
     NEW,
     LISTEN,
     CONNECT
-}
+} State;
 
-typedef struct connection {
-    sockaddr_in destination;
+typedef struct conn {
+    struct sockaddr_in destination;
     int socketID;
     bool ack;
     std::vector<DataPacket> dataPackets;
