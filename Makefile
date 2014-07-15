@@ -3,11 +3,28 @@
 # librcs.a. archive file that has all the RCS functions
 
 XCC = g++
-CFLAGS  = -c
-SOURCES = ucp_given.c rcs.cc
+CFLAGS = -c
+SOURCES = mybind.c ucp.c rcs.cc
 
-librcs.a: ucp_given.o rcs.o
-	ar -rcs librcs.a ucp_given.o rcs.o
+all: librcs.a test
+
+librcs.a: rcs.o
+ar -rcs librcs.a rcs.o
+
+test: client server
+
+client: rcs.o sample_client.o
+$(XCC) rcs.o sample_client.o -o tc
+
+sample_client.o: sample_client.cc
+$(XCC) $(CFLAGS) sample_client.cc
+
+server: rcs.o sample_server.o
+$(XCC) rcs.o sample_server.o -o ts
+
+sample_server.o: sample_server.cc
+$(XCC) $(CFLAGS) sample_server.cc
+
 
 clean:
-	-rm -f *.o *.a
+-rm -f *.o *.a
