@@ -1,5 +1,5 @@
-#ifndef _RCS_
-#define _RCS_
+#ifndef _UCP_
+#define _UCP_
 
 unsigned int get_rand();
 int ucpSocket();
