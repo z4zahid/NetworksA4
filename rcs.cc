@@ -21,16 +21,16 @@
 
 using namespace std;
 
-// char serverSeq = 0;
-// char clientSeq = 0;
+ char serverSeq = 0;
+ char clientSeq = 0;
 
-// pthread_mutex_t lock;
-// int counter;
+ pthread_mutex_t lock;
+ int counter;
 
-// // vector of sockets
-// vector<struct Connection> connections;
+ // vector of sockets
+ vector<Connection> connections;
 
-void addConnection(struct Connection connection) {
+void addConnection(Connection connection) {
     pthread_mutex_lock(&lock);
     connections.push_back(connection);
     pthread_mutex_unlock(&lock);

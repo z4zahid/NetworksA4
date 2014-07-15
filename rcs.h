@@ -23,11 +23,11 @@
 #define MAX_RETRANSMIT 5
 #define ACK_TIMEOUT 300
 
-char serverSeq = 0;
-char clientSeq = 0;
+//char serverSeq = 0;
+//char clientSeq = 0;
 
-pthread_mutex_t lock;
-int counter;
+//pthread_mutex_t lock;
+//int counter;
 
 typedef struct datapacket {
     void* data;
@@ -58,7 +58,7 @@ typedef struct conn {
     State state;
 } Connection;
 
-std::vector<Connection> connections;
+//std::vector<Connection> connections;
 
 int rcsSocket();
 
