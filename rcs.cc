@@ -5,30 +5,30 @@
 #include <vector>
 #include <cstring>
 
-#define SYN_BIT 0
-#define ACK_BIT 1
-#define SEQ_NUM 2
-#define ACK_NUM 3
-#define CHK_SUM 4
-#define DATA_INDEX 5
-#define HEADER_SIZE 6
+// #define SYN_BIT 0
+// #define ACK_BIT 1
+// #define SEQ_NUM 2
+// #define ACK_NUM 3
+// #define CHK_SUM 4
+// #define DATA_INDEX 5
+// #define HEADER_SIZE 6
 
-#define BUFFER_SIZE 518 // 512 + HEADER_SIZE
+// #define BUFFER_SIZE 518 // 512 + HEADER_SIZE
 
-#define ACK_SET 'a'
-#define SYN_SET 's'
-#define CHK_SET 'c'
+// #define ACK_SET 'a'
+// #define SYN_SET 's'
+// #define CHK_SET 'c'
 
 using namespace std;
 
-char serverSeq = 0;
-char clientSeq = 0;
+// char serverSeq = 0;
+// char clientSeq = 0;
 
-pthread_mutex_t lock;
-int counter;
+// pthread_mutex_t lock;
+// int counter;
 
-// vector of sockets
-vector<struct Connection> connections;
+// // vector of sockets
+// vector<struct Connection> connections;
 
 void addConnection(struct Connection connection) {
     pthread_mutex_lock(&lock);
