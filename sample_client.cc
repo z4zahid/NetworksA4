@@ -12,7 +12,6 @@
 #include <netinet/ip.h>
 #include <netinet/in.h>
 
-
 #include "rcs.h"
 
 static const int kBufferLength = 20;
