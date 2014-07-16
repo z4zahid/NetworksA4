@@ -171,8 +171,8 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
 
 void sendDataPacket(int socketID, DataPacket *packet) {
 
-    int size = packet.packetLen + 16; //4 ints to be stored as chars
-    ucpSendTo(socketID, packet->data, size, &getConnectionAddr(socketID));
+    int size = packet->packetLen + 16; //4 ints to be stored as chars
+    ucpSendTo(socketID, &packet->data, size, &getConnectionAddr(socketID));
 }
 
 int getTotalPackets(int numBytes) {
