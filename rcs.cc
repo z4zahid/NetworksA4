@@ -57,6 +57,7 @@ int rcsSocket() {
 
 //binds an RCS socket (first argument) to the address structure (second argument)
 int rcsBind(int socketID, struct sockaddr_in * addr) {
+
     return ucpBind(socketID, addr);
 }
 
