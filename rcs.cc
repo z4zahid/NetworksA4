@@ -266,15 +266,21 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         struct sockaddr_in addr;
         receiveDataPacket(socketID, &packet, &addr);
         
+        /*if (expectedBytes == 0) {
+			bytesReceived = 0;
+            expectedBytes = packet.totalBytes;
+            expectedPackets = getTotalPackets(expectedBytes);
+            packets.resize(expectedPackets);
+        }*/
+        
+        cout << "checking corrupted packet maxBytes " << maxBytes <<  endl;
+		if (!IsPacketCorrupted(packet)) {
         if (expectedBytes == 0) {
 			bytesReceived = 0;
             expectedBytes = packet.totalBytes;
             expectedPackets = getTotalPackets(expectedBytes);
             packets.resize(expectedPackets);
         }
-        
-        cout << "checking corrupted packet maxBytes " << maxBytes <<  endl;
-		if (!IsPacketCorrupted(packet)) {
             if (packet.sequenceNum >= rcvBase && packet.sequenceNum <= rcvBaseHi) {
 
                 int ack[2];
@@ -332,10 +338,13 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
 
 int allRetransmitsTimedOut(int retransmits[], int size) {
     int i;
+	cout << "size " << size << endl;
     for ( i=0; i<size; i++) {
-        if (retransmits[i] < MAX_RETRANSMIT && retransmits[i] > 0)
+			cout << " packet " << i << " retransmtis left " << retransmits[i] << endl;
+        if (retransmits[i] < MAX_RETRANSMIT){
             return 0; 
-    }
+ 	   }
+	}
     return 1;
 }
 
@@ -409,16 +418,16 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     }
 
     int rcvPackets[numPackets];
-    memset(rcvPackets, 0, numPackets);
+    memset(rcvPackets, 0, numPackets*sizeof(int));
     int retransmits[numPackets];
-    memset(retransmits, 0, numPackets);
+    memset(retransmits, 0, numPackets*sizeof(int));
     int bytesReceived = 0;
     int curWindowLo = 0;
     int curWindowHi = (numPackets < (WINDOW_SIZE - 1))? numPackets : WINDOW_SIZE-1;
 
     cout << "ACK rcv start" << endl;
     //now we receive them and move around our window accordingly
-    while (bytesReceived < numBytes && allRetransmitsTimedOut(retransmits, numPackets)) {
+    while (bytesReceived < numBytes && !allRetransmitsTimedOut(retransmits, numPackets)) {
 
         ucpSetSockRecvTimeout(socketID, ACK_TIMEOUT);
 
@@ -459,7 +468,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                 cout << "expected ACK" << curWindowLo << endl;
                 for (i = curWindowLo; i<seq;i++) {
                     if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
-                        sendDataPacket(socketID, &dataPackets.at(i));
+						sendDataPacket(socketID, &dataPackets.at(i));
                         retransmits[i] = retransmits[i] + 1;
                     }
                 }
@@ -467,9 +476,10 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
         }
         else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
-            cout << "no ACK " << curWindowLo << endl;
             int i = curWindowLo;
+            cout << "no ACK " << curWindowLo << " isRcv " << rcvPackets[i] << " retransmits " << retransmits[i] <<  endl;
             if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
+               cout << "retransmitted " << i << " times " << retransmits[i] << endl;
                 sendDataPacket(socketID, &dataPackets.at(i));
                 retransmits[i] = retransmits[i] + 1;
             }
