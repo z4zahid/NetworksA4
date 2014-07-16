@@ -148,10 +148,10 @@ void *serviceConnection(void *arg) {
             int err;
             pthread_t t;
             
-            if(err = pthread_create(&t, NULL, &serviceConnection, (void *)(newasock))) {
+           /* if(err = pthread_create(&t, NULL, &serviceConnection, (void *)(newasock))) {
                 fprintf(stderr, "pthread_create(): %s\n", strerror(err));
                 exit(1);
-            }
+            }*/
 
             cout << "Starting Send/Receive testing" << endl;
             char buffer[1024];

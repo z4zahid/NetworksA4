@@ -218,29 +218,30 @@ int getChecksum(const void* packet, int size) {
         sum += (int)(*it);
         it++;
     }
+	cout << "sum " << sum << endl;
     return sum;
 }
 
 int IsPacketCorrupted(DataPacket packet) {
-
+	cout << "checksum " << packet.checksum << endl;
     //checksum
     if (getChecksum(packet.data, packet.packetLen) != packet.checksum) {
         cout << "corrupted! checksum" << endl;
         return 1;
     }
 
-    //data length
+    /*data length
     int numBytes = 0;
     char* it = (char*)packet.data;
     while(it) {
         numBytes++;
         it++;
     }
-
+	cout << "length: " << numBytes << endl;
     if (numBytes != packet.packetLen) {
         cout << "corrupted! length" << endl;
         return 1;
-    }
+    }*/
 
     cout << "clean packet" << endl;
     return 0;
@@ -267,12 +268,14 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         receiveDataPacket(socketID, &packet, &addr);
         
         if (expectedBytes == 0) {
+			bytesReceived = 0;
             expectedBytes = packet.totalBytes;
             expectedPackets = getTotalPackets(expectedBytes);
             packets.resize(expectedPackets);
         }
         
-        if (!IsPacketCorrupted(packet)) {
+        cout << "checking corrupted packet maxBytes " << maxBytes <<  endl;
+		if (!IsPacketCorrupted(packet)) {
             if (packet.sequenceNum >= rcvBase && packet.sequenceNum <= rcvBaseHi) {
 
                 int ack[2];
@@ -322,8 +325,9 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 cout << "ignore: " << packet.sequenceNum << endl;
             }
         }
+		cout << "calling receive again " << endl;
     }
-
+	cout << "complete: bytesReceived " << bytesReceived << endl;
     return bytesReceived;
 } 
 
