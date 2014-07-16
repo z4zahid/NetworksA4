@@ -197,8 +197,7 @@ void sendDataPacket(int socketID, DataPacket *packet) {
     int size = packet->packetLen + 16; //4 ints to be stored as chars
 	sockaddr_in addr = getConnectionAddr(socketID);
    	cout << "sending to: " << inet_ntoa(addr.sin_addr) <<" socket " << socketID << endl;
-	 cout << "sending: " << packet->sequenceNum << " size: " << size << endl;
-    ucpSendTo(socketID, packet->data, size, &addr);
+    ucpSendTest(socketID, packet->data, size, &addr);
 }
 
 int getTotalPackets(int numBytes) {
@@ -282,7 +281,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
                 cout << "rcv: ACK" << endl;
-                ucpSendTo(socketID, &ack, sizeof(ack), &addr);
+                ucpSendTest(socketID, &ack, sizeof(ack), &addr);
 
                 //If the packet was not previously received, it is buffered.
                 if (packets[packet.sequenceNum].sequenceNum < 0) {
@@ -309,7 +308,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                         i++;
                     }
                     // moved receive window forward by the number of packets delivered
-                    int moveForwardBy = packet.sequenceNum - i; 
+                    int moveForwardBy = i - packet.sequenceNum; 
                     rcvBase += moveForwardBy;
                     rcvBaseHi = ((rcvBaseHi + moveForwardBy) > expectedPackets )? expectedPackets: rcvBaseHi + moveForwardBy;
                 } 
@@ -319,7 +318,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
                 cout << "rcv: already ACKED" << endl;
-                ucpSendTo(socketID, &ack, sizeof(ack), &addr); 
+                ucpSendTest(socketID, &ack, sizeof(ack), &addr); 
             } else {
                 //ignore
                 cout << "ignore: " << packet.sequenceNum << endl;
@@ -450,7 +449,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                     i++;
                 }
 
-                int moveForwardBy = (seq - i); 
+                int moveForwardBy = i - seq; 
                 curWindowLo += moveForwardBy;
                 cout << "exact ACK new window lo " << curWindowLo << " + " << moveForwardBy <<  endl;
                 curWindowHi = ((curWindowHi + moveForwardBy) > numPackets )? numPackets: curWindowHi + moveForwardBy;

@@ -61,6 +61,50 @@ int ucpSetSockRecvTimeout(int sockfd, int milliSecs)
 			(socklen_t)sizeof(t)));
 }
 
+int ucpSendTest(int sockfd, const void *buf, int len, const struct sockaddr_in *to)
+{
+    const int pDoEvil = 37; /* Chance in 100 that we will do evil */
+
+    if(len <= 0) {
+    errno = EINVAL; /* Invalid arg */
+    return -1;
+    }
+
+    unsigned char sendBuf[len];
+    bcopy(buf, (void *)sendBuf, (size_t)len);
+
+    if(get_rand()%100 < pDoEvil) {
+    /* What kind of evil? -- 1 of 3 kinds */
+
+    int evilKind = get_rand()%3;
+        /* evilKind == 0 -- send only part of the bytes 
+         *             1 -- corrupt some of the bytes
+         *             2 -- don't send packet
+         */
+    if(evilKind == 0) {
+        cout << "EVIL: LOST BYTES" << endl;
+        len = get_rand()%len; /* Guaranteed to be < len */
+    }
+    else if(evilKind == 1) {
+        cout << "EVIL: CORRUPTED" << endl;
+        int i;
+        for(i = 0; i < len; i++) {
+        sendBuf[i] = (unsigned char)(get_rand()%256);
+        }
+    }
+    else {
+        cout << "EVIL: NO BYTES SENT" << endl;
+        /* Pretend we send all the bytes when we don't */
+        return len;
+    }
+    }
+
+    return((int)sendto(sockfd, (const void *)sendBuf, (size_t)len, 0,
+            (const struct sockaddr *)to,
+                (socklen_t)sizeof(struct sockaddr_in)));
+}
+
+
 int ucpSendTo(int sockfd, const void *buf, int len, const struct sockaddr_in *to)
 {
     const int pDoEvil = 0;//37; /* Chance in 100 that we will do evil */
@@ -82,15 +126,18 @@ int ucpSendTo(int sockfd, const void *buf, int len, const struct sockaddr_in *to
 	     *             2 -- don't send packet
 	     */
 	if(evilKind == 0) {
+        cout << "EVIL: LOST BYTES" << endl;
 	    len = get_rand()%len; /* Guaranteed to be < len */
 	}
 	else if(evilKind == 1) {
+        cout << "EVIL: CORRUPTED" << endl;
 	    int i;
 	    for(i = 0; i < len; i++) {
 		sendBuf[i] = (unsigned char)(get_rand()%256);
 	    }
 	}
 	else {
+        cout << "EVIL: NO BYTES SENT" << endl;
 	    /* Pretend we send all the bytes when we don't */
 	    return len;
 	}
