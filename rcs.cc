@@ -176,7 +176,7 @@ void sendDataPacket(int socketID, DataPacket *packet) {
 
     int size = packet->packetLen + 16; //4 ints to be stored as chars
     sockaddr_in addr = getConnectionAddr(socketID);
-    cout << "sending: " << packet.sequenceNum << " size: " << size << endl;
+    cout << "sending: " << packet->sequenceNum << " size: " << size << endl;
     ucpSendTo(socketID, packet->data, size, &addr);
 }
 
@@ -190,11 +190,12 @@ int getTotalPackets(int numBytes) {
 }
     
 // let's just sum them, ucpSend corrupts each packet, very unlikely this hash will fail
-int getChecksum(const void* packet) {
-    int sum = 0;
+int getChecksum(const void* packet, int size) {
+    int sum = 0, i;
     char* it = (char*)packet;
-    while (it) {
+    for (i = 0; i< size; i++) {
         sum += (int)(*it);
+        cout << "sum: " << sum << endl;
         it++;
     }
     return sum;
@@ -203,7 +204,7 @@ int getChecksum(const void* packet) {
 int IsPacketCorrupted(DataPacket packet) {
 
     //checksum
-    if (getChecksum(packet.data) != packet.checksum) {
+    if (getChecksum(packet.data, packet.packetLen) != packet.checksum) {
         cout << "corrupted! checksum" << endl;
         return 1;
     }
@@ -337,7 +338,7 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
             iterate++;
         }
 
-        packet.checksum = getChecksum(iterate);
+        packet.checksum = getChecksum(iterate, packet.packetLen);
         cout << " packet: " << i << " checksum: " << packet.checksum << endl;
 
         memcpy(&packet.data[0], &packet.sequenceNum, sizeof(int));
