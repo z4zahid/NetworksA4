@@ -67,9 +67,6 @@ int main(int arcg, char* argv[]) {
     // Print the IP port number
     cout << ntohs(addr.sin_port) << endl;
 
-
-
-
     char buffer[1024];
     addrlen = (socklen_t)sizeof(struct sockaddr_in);
     
@@ -79,7 +76,7 @@ int main(int arcg, char* argv[]) {
 
     rcsAccept(server_socket, &addr);
 
-    cout << "Acceptance" << endl;
+    cout << "Acceptance - Starting Send/Receive testing" << endl;
 
     rcsRecv(server_socket, &buffer, 1024); 
     //recvfrom(server_socket, buffer, 1024, 0, (struct sockaddr *)&addr, &addrlen);

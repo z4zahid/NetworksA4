@@ -160,10 +160,13 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
 
     int size = MAX_PACKET_SIZE + 16;
     char data[size]; 
+    cout << "receiving" << endl;
     ucpRecvFrom(socketID, data, size, addr);
 
     memcpy(&packet->sequenceNum, &data[0], sizeof(int));
+    cout << "receiving: sequenceNum: " << packet->sequenceNum << endl;
     memcpy(&packet->totalBytes, &data[4], sizeof(int));
+    cout << "receiving: totalBytes: " << packet->totalBytes << endl;
     memcpy(&packet->checksum, &data[8], sizeof(int));
     memcpy(&packet->packetLen, &data[12], sizeof(int));
     memcpy(&packet->data, &data[16], packet->packetLen);
@@ -173,6 +176,7 @@ void sendDataPacket(int socketID, DataPacket *packet) {
 
     int size = packet->packetLen + 16; //4 ints to be stored as chars
     sockaddr_in addr = getConnectionAddr(socketID);
+    cout << "sending: " << packet.sequenceNum << " size: " << size << endl;
     ucpSendTo(socketID, packet->data, size, &addr);
 }
 
@@ -181,6 +185,7 @@ int getTotalPackets(int numBytes) {
     if (numBytes % MAX_PACKET_SIZE > 0) {
         numPackets++;
     }
+    cout << "totalPackets: " << numPackets << endl;
     return numPackets;
 }
     
@@ -198,8 +203,10 @@ int getChecksum(const void* packet) {
 int IsPacketCorrupted(DataPacket packet) {
 
     //checksum
-    if (getChecksum(packet.data) != packet.checksum)
+    if (getChecksum(packet.data) != packet.checksum) {
+        cout << "corrupted! checksum" << endl;
         return 1;
+    }
 
     //data length
     int numBytes = 0;
@@ -209,9 +216,12 @@ int IsPacketCorrupted(DataPacket packet) {
         it++;
     }
 
-    if (numBytes != packet.packetLen)
+    if (numBytes != packet.packetLen) {
+        cout << "corrupted! length" << endl;
         return 1;
+    }
 
+    cout << "clean packet" << endl;
     return 0;
 }
 
@@ -228,6 +238,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
     int expectedPackets = 0;
     vector<DataPacket> packets;
 
+    cout << "start rcv" << endl;
     while (bytesReceived < expectedBytes && bytesReceived < maxBytes) {
         
         DataPacket packet;
@@ -246,12 +257,14 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 int ack[2];
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
+                cout << "rcv: ACK" << endl;
                 ucpSendTo(socketID, &ack, sizeof(ack), &addr);
 
                 //If the packet was not previously received, it is buffered.
                 if (packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
                     bytesReceived += packet.packetLen;
+                    cout << "bytesReceived: " << bytesReceived << endl;
                 }
 
                 if (packet.sequenceNum == rcvBase) {
@@ -266,7 +279,8 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                             iterate++;
                         }
 
-                        memcpy(iterate, p.data, p.packetLen);
+                        cout << "copy to rcv buffer " << endl;
+                        memcpy(iterate, &p.data[16], p.packetLen);
                     
                         i++;
                     }
@@ -280,9 +294,11 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 int ack[2];
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
+                cout << "rcv: already ACKED" << endl;
                 ucpSendTo(socketID, &ack, sizeof(ack), &addr); 
             } else {
                 //ignore
+                cout << "ignore: " << packet.sequenceNum << endl;
             }
         }
     }
@@ -310,7 +326,8 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         packet.sequenceNum = i;
         packet.totalBytes = numBytes;
         packet.packetLen = (i == numPackets - 1)? (numBytes - MAX_PACKET_SIZE*i) : MAX_PACKET_SIZE;
-        
+        cout << "build packet: " << i << " len: " << packet.packetLen << endl;
+
         int size = packet.packetLen + 16; //4 ints to be stored as chars
         memset(packet.data, 0, size);
 
@@ -321,6 +338,8 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         }
 
         packet.checksum = getChecksum(iterate);
+        cout << " packet: " << i << " checksum: " << packet.checksum << endl;
+
         memcpy(&packet.data[0], &packet.sequenceNum, sizeof(int));
         memcpy(&packet.data[4], &packet.totalBytes, sizeof(int));
         memcpy(&packet.data[8], &packet.checksum, sizeof(int));
@@ -359,6 +378,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     int curWindowLo = 0;
     int curWindowHi = (numPackets < (WINDOW_SIZE - 1))? numPackets : WINDOW_SIZE-1;
 
+    cout << "send start" << endl;
     //now we receive them and move around our window accordingly
     while (bytesReceived < numBytes && allRetransmitsTimedOut(retransmits, numPackets)) {
 
@@ -372,11 +392,13 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
         if (bytes > 0) {
             
             int seq = ack[SEQUENCE_NUM];
+            cout << "ACK: " << seq << endl;
 
             // if in current window, mark packet as received
             if (seq >= curWindowLo && seq <= curWindowHi) {
                 if (rcvPackets[seq]== 0) {
                     bytesReceived += ack[PACKET_LEN];
+                    cout << "bytesReceived: " << bytesReceived << endl;
                     rcvPackets[seq] = 1;
                 }
             } 
@@ -391,10 +413,12 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
                 int moveForwardBy = (seq - i); 
                 curWindowLo += moveForwardBy;
+                cout << "exact ACK new window lo " << curWindowLo << " + " << moveForwardBy <<  endl;
                 curWindowHi = ((curWindowHi + moveForwardBy) > numPackets )? numPackets: curWindowHi + moveForwardBy;
 
             } else {
                 // case 2: this is greater than the ACK we expect -> retransmit ones in middle
+                cout << "expected ACK" << curWindowLo << endl;
                 for (i = curWindowLo; i<seq;i++) {
                     if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
                         sendDataPacket(socketID, &dataPackets.at(i));
@@ -405,6 +429,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
         }
         else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
+            cout << "no ACK " << curWindowLo << endl;
             int i = curWindowLo;
             if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
                 sendDataPacket(socketID, &dataPackets.at(i));

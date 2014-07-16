@@ -53,12 +53,12 @@ int main(int argc, char* argv[]) {
             break;
         }
     }
-    string s = "bah";
     rcsBind(client_socket, &server_addr);
     rcsConnect(client_socket, &server_addr);
 
-    cout << "DONE " << endl;
+    cout << "Starting Send/Receive testing" << endl;
 
+    string s = "bah";
     rcsSend(client_socket, s.c_str(), s.length());
     //ucpSendTo(client_socket, s.c_str(), s.length() + 1, &server_addr);
 
