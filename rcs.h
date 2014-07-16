@@ -31,7 +31,7 @@
 #define PACKET_LEN 1
 
 typedef struct datapacket {
-    char data[MAX_PACKET_SIZE];
+    char data[MAX_PACKET_SIZE + 16];
     int sequenceNum;
     int checksum;
     int totalBytes;

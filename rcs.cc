@@ -172,16 +172,7 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
 void sendDataPacket(int socketID, DataPacket packet) {
 
     int size = packet.packetLen + 16; //4 ints to be stored as chars
-    char data[size]; 
-    memset(data, 0, size);
-
-    memcpy(&data[0], &packet.sequenceNum, sizeof(int));
-    memcpy(&data[4], &packet.totalBytes, sizeof(int));
-    memcpy(&data[8], &packet.checksum, sizeof(int));
-    memcpy(&data[12], &packet.packetLen, sizeof(int));
-    memcpy(&data[16], &packet.data, packet.packetLen);
-
-    ucpSendTo(socketID, data, size, &getConnectionAddr(socketID));
+    ucpSendTo(socketID, packet.data, size, &getConnectionAddr(socketID));
 }
 
 int getTotalPackets(int numBytes) {
@@ -314,10 +305,13 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
 
     for (i = 0; i<numPackets;i++) {
         
-        DataPacket dataPacket;
-        dataPacket.sequenceNum = i;
-        dataPacket.totalBytes = numBytes;
-        dataPacket.packetLen = (i == numPackets - 1)? (numBytes - MAX_PACKET_SIZE*i) : MAX_PACKET_SIZE;
+        DataPacket packet;
+        packet.sequenceNum = i;
+        packet.totalBytes = numBytes;
+        packet.packetLen = (i == numPackets - 1)? (numBytes - MAX_PACKET_SIZE*i) : MAX_PACKET_SIZE;
+        
+        int size = packet.packetLen + 16; //4 ints to be stored as chars
+        memset(packet.data, 0, size);
 
         int index = i*MAX_PACKET_SIZE;
         char* iterate = (char*)sendBuffer;
@@ -325,10 +319,13 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
             iterate++;
         }
 
-        memset(dataPacket.data, '\0', dataPacket.packetLen);
-        memcpy(dataPacket.data, iterate, dataPacket.packetLen);
+        packet.checksum = getChecksum(iterate);
+        memcpy(&data[0], &packet.sequenceNum, sizeof(int));
+        memcpy(&data[4], &packet.totalBytes, sizeof(int));
+        memcpy(&data[8], &packet.checksum, sizeof(int));
+        memcpy(&data[12], &packet.packetLen, sizeof(int));
+        memcpy(&data[16], iterate, packet.packetLen);
         
-        dataPacket.checksum = getChecksum(dataPacket.data);
         packets->push_back(dataPacket);
     }
 }
