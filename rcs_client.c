@@ -83,6 +83,10 @@ int main(int argc, char *argv[]) {
         sleep(getrand()%7);
     }
     
+    cout << "Starting Send/Receive testing" << endl;
+    string str = "bah";
+    rcsSend(s, str.c_str(), str.length()+1);
+
     shutdown(s, SHUT_RDWR);
     close(s);
     

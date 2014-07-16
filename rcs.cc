@@ -157,6 +157,14 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
         
     memset(receiveBuf, 0, BUFFER_SIZE);
     
+    Connection connection;
+    connection.destination = *addr;
+    connection.socketID = socketID;
+    connection.ack = false;
+    connection.ackNum = ack_num;
+    addConnection(connection);
+    cout << "client storing: " << inet_ntoa(addr->sin_addr) << " scoket " << socketID <<  endl;
+
     // Send ACK to the server
     ucpSendTo(socketID, buf, BUFFER_SIZE, addr);
     
@@ -166,14 +174,12 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
 
 void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr) {
 
-    int size = 19;//MAX_PACKET_SIZE + 16;
+    int size = MAX_PACKET_SIZE + 16;
     char data[size]; 
     memset(data, 0, size);
     int bytes = ucpRecvFrom(socketID, data, size, addr);
 	cout << "bytes rcv: " << bytes << endl;
 	cout << errno << " " <<  strerror(errno) << endl;
-
-
 
     memcpy(&packet->sequenceNum, &data[0], sizeof(int));
     cout << "rcv: sequenceNum: " << packet->sequenceNum << endl;

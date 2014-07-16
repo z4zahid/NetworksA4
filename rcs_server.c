@@ -142,7 +142,7 @@ void *serviceConnection(void *arg) {
         memset(&a, 0, sizeof(struct sockaddr_in));
         int asock;
         while((asock = rcsAccept(s, (struct sockaddr_in *)&a)) > 0) {
-	    cout << "Accepted connection" << endl;
+	       cout << "Accepted connection" << endl;
             int *newasock = (int *)malloc(sizeof(int));
             *newasock = asock;
             int err;
@@ -152,6 +152,10 @@ void *serviceConnection(void *arg) {
                 fprintf(stderr, "pthread_create(): %s\n", strerror(err));
                 exit(1);
             }
+
+            cout << "Starting Send/Receive testing" << endl;
+            char buffer[1024];
+            rcsRecv(s, &buffer,1024 ); 
         }
         
         return 0;
