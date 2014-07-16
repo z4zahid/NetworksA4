@@ -15,7 +15,7 @@
 #define DATA_INDEX 5
 #define HEADER_SIZE 6
 
-#define BUFFER_SIZE 517 // 512 + HEADER_SIZE
+#define BUFFER_SIZE 518 // 512 + HEADER_SIZE
 
 #define ACK_SET 'a'
 #define SYN_SET 's'
