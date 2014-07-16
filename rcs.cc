@@ -160,6 +160,7 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
 
     int size = MAX_PACKET_SIZE + 16;
     char data[size]; 
+    memset(data, 0, size);
     ucpRecvFrom(socketID, data, size, addr);
 
     memcpy(&packet->sequenceNum, &data[0], sizeof(int));
@@ -342,22 +343,22 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         memcpy(&packet.data[0], &packet.sequenceNum, sizeof(int));
         int seq;
         memcpy(&seq, &packet.data[0], sizeof(int));
-        cout << "sequenceNum " << packet.sequenceNum << "copied: " << seq << endl;
+        cout << "sequenceNum " << packet.sequenceNum << " copied: " << seq << endl;
 
         memcpy(&packet.data[4], &packet.totalBytes, sizeof(int));
         int total;
         memcpy(&total, &packet.data[4], sizeof(int));
-        cout << "totalBytes " << packet.totalBytes << "copied: " << seq << endl;
+        cout << "totalBytes " << packet.totalBytes << " copied: " << total << endl;
 
         memcpy(&packet.data[8], &packet.checksum, sizeof(int));
         int check;
         memcpy(&check, &packet.data[8], sizeof(int));
-        cout << "checksum " << packet.checksum << "copied: " << seq << endl;
+        cout << "checksum " << packet.checksum << " copied: " << check << endl;
 
         memcpy(&packet.data[12], &packet.packetLen, sizeof(int));
         int len;
         memcpy(&len, &packet.data[12], sizeof(int));
-        cout << "packetLen " << packet.packetLen << "copied: " << seq << endl;
+        cout << "packetLen " << packet.packetLen << " copied: " << len << endl;
 
         memcpy(&packet.data[16], iterate, packet.packetLen);
         
