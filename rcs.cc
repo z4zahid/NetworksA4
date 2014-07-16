@@ -160,15 +160,16 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
 
     int size = MAX_PACKET_SIZE + 16;
     char data[size]; 
-    cout << "receiving" << endl;
     ucpRecvFrom(socketID, data, size, addr);
 
     memcpy(&packet->sequenceNum, &data[0], sizeof(int));
-    cout << "receiving: sequenceNum: " << packet->sequenceNum << endl;
+    cout << "rcv: sequenceNum: " << packet->sequenceNum << endl;
     memcpy(&packet->totalBytes, &data[4], sizeof(int));
-    cout << "receiving: totalBytes: " << packet->totalBytes << endl;
+    cout << "rcv: totalBytes: " << packet->totalBytes << endl;
     memcpy(&packet->checksum, &data[8], sizeof(int));
+    cout << "rcv: totalBytes: " << packet->checksum << endl;
     memcpy(&packet->packetLen, &data[12], sizeof(int));
+    cout << "rcv: totalBytes: " << packet->packetLen << endl;
     memcpy(&packet->data, &data[16], packet->packetLen);
 }
 
@@ -195,7 +196,6 @@ int getChecksum(const void* packet, int size) {
     char* it = (char*)packet;
     for (i = 0; i< size; i++) {
         sum += (int)(*it);
-        cout << "sum: " << sum << endl;
         it++;
     }
     return sum;
@@ -327,7 +327,6 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         packet.sequenceNum = i;
         packet.totalBytes = numBytes;
         packet.packetLen = (i == numPackets - 1)? (numBytes - MAX_PACKET_SIZE*i) : MAX_PACKET_SIZE;
-        cout << "build packet: " << i << " len: " << packet.packetLen << endl;
 
         int size = packet.packetLen + 16; //4 ints to be stored as chars
         memset(packet.data, 0, size);
@@ -339,12 +338,27 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         }
 
         packet.checksum = getChecksum(iterate, packet.packetLen);
-        cout << " packet: " << i << " checksum: " << packet.checksum << endl;
 
         memcpy(&packet.data[0], &packet.sequenceNum, sizeof(int));
+        int seq;
+        memcpy(&seq, &packet.data[0], sizeof(int));
+        cout << "sequenceNum " << packet.sequenceNum << "copied: " << seq << endl;
+
         memcpy(&packet.data[4], &packet.totalBytes, sizeof(int));
+        int total;
+        memcpy(&total, &packet.data[4], sizeof(int));
+        cout << "totalBytes " << packet.totalBytes << "copied: " << seq << endl;
+
         memcpy(&packet.data[8], &packet.checksum, sizeof(int));
+        int check;
+        memcpy(&check, &packet.data[8], sizeof(int));
+        cout << "checksum " << packet.checksum << "copied: " << seq << endl;
+
         memcpy(&packet.data[12], &packet.packetLen, sizeof(int));
+        int len;
+        memcpy(&len, &packet.data[12], sizeof(int));
+        cout << "packetLen " << packet.packetLen << "copied: " << seq << endl;
+
         memcpy(&packet.data[16], iterate, packet.packetLen);
         
         packets->push_back(packet);
@@ -379,7 +393,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     int curWindowLo = 0;
     int curWindowHi = (numPackets < (WINDOW_SIZE - 1))? numPackets : WINDOW_SIZE-1;
 
-    cout << "send start" << endl;
+    cout << "ACK rcv start" << endl;
     //now we receive them and move around our window accordingly
     while (bytesReceived < numBytes && allRetransmitsTimedOut(retransmits, numPackets)) {
 
