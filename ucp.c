@@ -42,7 +42,7 @@ int ucpSocket()
     return(socket(AF_INET, SOCK_DGRAM, 0));
 }
 
-int ucpBind(int sockfd, const struct sockaddr_in *addr) {
+int ucpBind(int sockfd, struct sockaddr_in *addr) {
     return(mybind(sockfd, addr));
 }
 

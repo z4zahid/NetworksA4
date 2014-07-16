@@ -54,7 +54,7 @@ typedef struct conn {
 } Connection;
 
 int rcsSocket();
-int rcsBind(int socketID, const struct sockaddr_in * addr);
+int rcsBind(int socketID, struct sockaddr_in * addr);
 int rcsGetSockName(int socketID, struct sockaddr_in * addr);
 int rcsListen(int socketID);
 int rcsAccept(int socketID, struct sockaddr_in *addr);

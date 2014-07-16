@@ -50,7 +50,7 @@ int rcsSocket() {
 } 
 
 //binds an RCS socket (first argument) to the address structure (second argument)
-int rcsBind(int socketID, const struct sockaddr_in * addr) {
+int rcsBind(int socketID, struct sockaddr_in * addr) {
     return ucpBind(socketID, addr);
 }
 
@@ -169,7 +169,7 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
     memcpy(&packet->data, &data[16], packet->packetLen);
 }
 
-void sendDataPacket(int socketID, DataPacket packet, char data[]) {
+void sendDataPacket(int socketID, DataPacket packet) {
 
     int size = packet.packetLen + 16; //4 ints to be stored as chars
     char data[size]; 
