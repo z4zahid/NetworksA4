@@ -16,10 +16,13 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <strings.h>
+#include <iostream>
 
 #include "mybind.c"
 
 extern int errno;
+
+using namespace std;
 
 unsigned int get_rand() {
     unsigned int ret = 0;
