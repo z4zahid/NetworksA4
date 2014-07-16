@@ -75,10 +75,10 @@ int main(int arcg, char* argv[]) {
     cout << "Listen fini" << endl;
 
     rcsAccept(server_socket, &addr);
-
+	cout << "server addr: " << inet_ntoa(addr.sin_addr) << " server socket " << server_socket<< endl;
     cout << "Acceptance - Starting Send/Receive testing" << endl;
 
-    rcsRecv(server_socket, &buffer, 1024); 
+    rcsRecv(server_socket, &buffer,20 ); 
     //recvfrom(server_socket, buffer, 1024, 0, (struct sockaddr *)&addr, &addrlen);
     //cout<<buffer<<endl;
     /* 

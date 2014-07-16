@@ -55,11 +55,11 @@ int main(int argc, char* argv[]) {
     }
     rcsBind(client_socket, &server_addr);
     rcsConnect(client_socket, &server_addr);
-
+	cout << "server addr " << inet_ntoa(server_addr.sin_addr) << " client socket " << client_socket <<  endl;
     cout << "Starting Send/Receive testing" << endl;
 
     string s = "bah";
-    rcsSend(client_socket, s.c_str(), s.length());
+    rcsSend(client_socket, s.c_str(), s.length()+1);
     //ucpSendTo(client_socket, s.c_str(), s.length() + 1, &server_addr);
 
     // Connedct to a server.

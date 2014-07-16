@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <string>
 #include <cstring>
+#include <cerrno>
 
 using namespace std;
 
@@ -20,6 +21,7 @@ vector<Connection> connections;
 void addConnection(Connection connection) {
     pthread_mutex_lock(&lock);
     connections.push_back(connection);
+   	cout << "pushback: " << inet_ntoa(connection.destination.sin_addr) << " scoket " << connection.socketID <<  endl;
     pthread_mutex_unlock(&lock);
 }
 
@@ -35,13 +37,17 @@ void removeConnection(int socketID) {
 }
 
 struct sockaddr_in getConnectionAddr(int socketID) {
-    pthread_mutex_lock(&lock);
+    cout << "get waiting for lock " << connections.size() << endl;
+	 pthread_mutex_lock(&lock);
     for (int i = 0 ; i < connections.size(); i++) {
+		cout << "conn socket " << connections.at(i).socketID << endl;
         if ((connections.at(i)).socketID == socketID) {
+   			cout << "GET: " << inet_ntoa(connections.at(i).destination.sin_addr) << " scoket " << connections.at(i).socketID <<  endl;
             return connections.at(i).destination;
         }
     }
     pthread_mutex_unlock(&lock);
+	cout << "returning with nothing " << endl;
 }
 
 //used to allocate an RCS socket. Returns a socket descriptor (positive integer) on success
@@ -82,7 +88,8 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
         if (receiveBuf[SYN_BIT] == SYN_SET && receiveBuf[CHK_SUM] == CHK_SET) {
             connection.destination = *addr;
             connection.socketID = socketID;
-	    connection.ack = false;
+	    	connection.ack = false;
+   			cout << "storing: " << inet_ntoa(addr->sin_addr) << " scoket " << socketID <<  endl;
             break;
         }
     }
@@ -158,27 +165,32 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
 
 void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr) {
 
-    int size = MAX_PACKET_SIZE + 16;
+    int size = 19;//MAX_PACKET_SIZE + 16;
     char data[size]; 
     memset(data, 0, size);
-    ucpRecvFrom(socketID, data, size, addr);
+    int bytes = ucpRecvFrom(socketID, data, size, addr);
+	cout << "bytes rcv: " << bytes << endl;
+	cout << errno << " " <<  strerror(errno) << endl;
+
+
 
     memcpy(&packet->sequenceNum, &data[0], sizeof(int));
     cout << "rcv: sequenceNum: " << packet->sequenceNum << endl;
     memcpy(&packet->totalBytes, &data[4], sizeof(int));
     cout << "rcv: totalBytes: " << packet->totalBytes << endl;
     memcpy(&packet->checksum, &data[8], sizeof(int));
-    cout << "rcv: totalBytes: " << packet->checksum << endl;
+    cout << "rcv: checksum: " << packet->checksum << endl;
     memcpy(&packet->packetLen, &data[12], sizeof(int));
-    cout << "rcv: totalBytes: " << packet->packetLen << endl;
+    cout << "rcv: len: " << packet->packetLen << endl;
     memcpy(&packet->data, &data[16], packet->packetLen);
 }
 
 void sendDataPacket(int socketID, DataPacket *packet) {
 
     int size = packet->packetLen + 16; //4 ints to be stored as chars
-    sockaddr_in addr = getConnectionAddr(socketID);
-    cout << "sending: " << packet->sequenceNum << " size: " << size << endl;
+	sockaddr_in addr = getConnectionAddr(socketID);
+   	cout << "sending to: " << inet_ntoa(addr.sin_addr) <<" socket " << socketID << endl;
+	 cout << "sending: " << packet->sequenceNum << " size: " << size << endl;
     ucpSendTo(socketID, packet->data, size, &addr);
 }
 
