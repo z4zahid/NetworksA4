@@ -162,11 +162,11 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
     char data[size]; 
     ucpRecvFrom(socketID, data, size, addr);
 
-    memcpy(packet->sequenceNum, data[0], sizeof(int));
-    memcpy(packet->totalBytes, data[4], sizeof(int));
-    memcpy(packet->checksum, data[8], sizeof(int));
-    memcpy(packet->packetLen, data[12], sizeof(int));
-    memcpy(packet->data, data[16], packet.packetLen);
+    memcpy(&packet->sequenceNum, &data[0], sizeof(int));
+    memcpy(&packet->totalBytes, &data[4], sizeof(int));
+    memcpy(&packet->checksum, &data[8], sizeof(int));
+    memcpy(&packet->packetLen, &data[12], sizeof(int));
+    memcpy(&packet->data, &data[16], packet.packetLen);
 }
 
 void sendDataPacket(int socketID, DataPacket packet) {
@@ -175,11 +175,11 @@ void sendDataPacket(int socketID, DataPacket packet) {
     char data[size]; 
     memset(data, 0, size);
 
-    memcpy(data[0], packet.sequenceNum, sizeof(int));
-    memcpy(data[4], packet.totalBytes, sizeof(int));
-    memcpy(data[8], packet.checksum, sizeof(int));
-    memcpy(data[12], packet.packetLen, sizeof(int));
-    memcpy(data[16], packet.data, packet.packetLen);
+    memcpy(&data[0], &packet.sequenceNum, sizeof(int));
+    memcpy(&data[4], &packet.totalBytes, sizeof(int));
+    memcpy(&data[8], &packet.checksum, sizeof(int));
+    memcpy(&data[12], &packet.packetLen, sizeof(int));
+    memcpy(&data[16], &packet.data, packet.packetLen);
 
     ucpSendTo(socketID, data, size, &getConnectionAddr(socketID));
 }
@@ -240,7 +240,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         
         DataPacket packet;
         struct sockaddr_in addr;
-        receiveDataPacket(socketID, &packet, &addr)
+        receiveDataPacket(socketID, &packet, &addr);
         
         if (expectedBytes == 0) {
             expectedBytes = packet.totalBytes;
@@ -329,7 +329,7 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         memcpy(dataPacket.data, iterate, dataPacket.packetLen);
         
         dataPacket.checksum = getChecksum(dataPacket.data);
-        packets.push_back(dataPacket);
+        packets->push_back(dataPacket);
     }
 }
 
@@ -373,12 +373,12 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
         // ACK received:
         if (bytes > 0) {
             
-            int seq = ack.sequenceNum;
+            int seq = ack[SEQUENCE_NUM];
 
             // if in current window, mark packet as received
             if (seq >= curWindowLo && seq <= curWindowHi) {
                 if (rcvPackets[seq]== 0) {
-                    bytesReceived += ack.packetLen;
+                    bytesReceived += ack[PACKET_LEN];
                     rcvPackets[seq] = 1;
                 }
             } 
