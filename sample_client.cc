@@ -21,19 +21,23 @@ int main(int argc, char* argv[]) {
     if (argc < 3) {
         fprintf(stderr, "Error, enter server name and port"); 
     }
+
     int server_port = 0;
-    int client_socket = -1;
-    // connect to a socket
-    while (client_socket < 0) {
-        // 0 means use default protocol from the selected domain (AF_INET) 
-        // and type (SOCK_STREAM) (Wikipedia)
-        client_socket = rcsSocket();
-    }
-    
+    int client_socket = rcsSocket();
+
     struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(atoi(argv[2]));
     
+    memset(&server_addr, 0, sizeof(struct sockaddr_in));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = 0;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    
+    if(rcsBind(client_socket, (struct sockaddr_in *)(&server_addr)) < 0) {
+        perror("bind"); exit(1);
+    }
+
+    cout << "Finish binding" << endl;
+
     // Lookup address provided.
     // The following piece of code was written after consulting the code shown in tutorial.
     struct addrinfo *res, hints; 
@@ -48,18 +52,17 @@ int main(int argc, char* argv[]) {
     struct addrinfo *list_iterator;
     for (list_iterator = res; list_iterator != NULL; list_iterator = list_iterator->ai_next) {
         struct in_addr addr;
-        if (list_iterator->ai_family = AF_INET) {
+        if (list_iterator->ai_family == AF_INET) {
             server_addr.sin_addr.s_addr = ((struct sockaddr_in *) (list_iterator->ai_addr)) ->sin_addr.s_addr;
             break;
         }
     }
-    rcsBind(client_socket, &server_addr);
     rcsConnect(client_socket, &server_addr);
 
     cout << "Starting Send/Receive testing" << endl;
 
-    string s = "bah";
-    rcsSend(client_socket, s.c_str(), s.length());
+    //string s = "bah";
+   // rcsSend(client_socket, s.c_str(), s.length());
     //ucpSendTo(client_socket, s.c_str(), s.length() + 1, &server_addr);
 
     // Connedct to a server.
