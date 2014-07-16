@@ -75,13 +75,13 @@ int main(int argc, char *argv[]) {
   
     cout << "Connection established" << endl;
   
-    while((nread = read(STDIN_FILENO, buf, 256)) > 0) {
+    /*while((nread = read(STDIN_FILENO, buf, 256)) > 0) {
         if(rcsSend(s, buf, nread) < 0) {
             perror("send"); exit(1);
         }
         
         sleep(getrand()%7);
-    }
+    }*/
     
     cout << "Starting Send/Receive testing" << endl;
     string str = "bah";

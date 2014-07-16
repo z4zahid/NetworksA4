@@ -141,7 +141,7 @@ void *serviceConnection(void *arg) {
         
         memset(&a, 0, sizeof(struct sockaddr_in));
         int asock;
-        while((asock = rcsAccept(s, (struct sockaddr_in *)&a)) > 0) {
+        while((asock = rcsAccept(s, (struct sockaddr_in *)&a)) >= 0) {
 	       cout << "Accepted connection" << endl;
             int *newasock = (int *)malloc(sizeof(int));
             *newasock = asock;
