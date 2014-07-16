@@ -166,10 +166,10 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
     memcpy(&packet->totalBytes, &data[4], sizeof(int));
     memcpy(&packet->checksum, &data[8], sizeof(int));
     memcpy(&packet->packetLen, &data[12], sizeof(int));
-    memcpy(&packet->data, &data[16], packet.packetLen);
+    memcpy(&packet->data, &data[16], packet->packetLen);
 }
 
-void sendDataPacket(int socketID, DataPacket packet) {
+void sendDataPacket(int socketID, DataPacket packet, char data[]) {
 
     int size = packet.packetLen + 16; //4 ints to be stored as chars
     char data[size]; 
