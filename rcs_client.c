@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     }*/
     
     cout << "Starting Send/Receive testing" << endl;
-    string str = "Because I'm a scientist, I'm qualified to universally quantize based on a sample size of one";
+    string str;
     rcsSend(s, str.c_str(), str.length()+1);
 
     shutdown(s, SHUT_RDWR);

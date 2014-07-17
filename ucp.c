@@ -79,7 +79,7 @@ int ucpSendTest(int sockfd, const void *buf, int len, const struct sockaddr_in *
     if(get_rand()%100 < pDoEvil) {
     /* What kind of evil? -- 1 of 3 kinds */
 
-    int evilKind = 1;//get_rand()%3;
+    int evilKind = 0;//get_rand()%3;
         /* evilKind == 0 -- send only part of the bytes 
          *             1 -- corrupt some of the bytes
          *             2 -- don't send packet

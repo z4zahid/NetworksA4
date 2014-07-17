@@ -455,7 +455,10 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
 // Returns the actual number of bytes sent. If rcsSend() returns with a
 // non-negative return value, then we know that so many bytes were reliably received by the other end
 int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
-    
+   
+	if (numBytes < 1)
+		return 0;
+ 
     vector<DataPacket> dataPackets;
     int numPackets = getTotalPackets(numBytes);
     populateDataPackets(sendBuffer, numBytes, socketID, &dataPackets);
