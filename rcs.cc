@@ -324,7 +324,8 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 ucpSendTest(socketID, &ack, sizeof(ack), &addr);
 
                 //If the packet was not previously received, it is buffered.
-                if (packets[packet.sequenceNum].sequenceNum < 0) {
+                cout << "pack.seq " << packet.sequenceNum << " size" << packets.size() << endl;
+				if (packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
                     bytesReceived += packet.packetLen;
                     cout << "bytesReceived: " << bytesReceived << endl;
@@ -456,6 +457,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     int bytesReceived = 0;
     int curWindowLo = 0;
     int curWindowHi = (numPackets < (WINDOW_SIZE - 1))? numPackets : WINDOW_SIZE-1;
+	int packetsReceived = 0;
 
     cout << "ACK rcv start" << endl;
     //now we receive them and move around our window accordingly
@@ -475,7 +477,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
             // if in current window, mark packet as received
             if (seq >= curWindowLo && seq <= curWindowHi) {
-                if (rcvPackets[seq]== 0) {
+                if (rcvPackets[seq]== 0 && ack[PACKET_LEN] <= MAX_PACKET_SIZE) {
                     bytesReceived += ack[PACKET_LEN];
                     cout << "bytesReceived: " << bytesReceived << endl;
                     rcvPackets[seq] = 1;
