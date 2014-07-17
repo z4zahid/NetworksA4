@@ -33,7 +33,6 @@ extern int rcsAccept (int , struct sockaddr_in *);
 extern int rcsConnect (int , const struct sockaddr_in *);
 extern int rcsRecv (int , void *, int );
 extern int rcsSend(int,const void *,int);
-extern int mybind(int, struct sockaddr_in *);
 
 using namespace std;
 
@@ -128,7 +127,7 @@ void *serviceConnection(void *arg) {
             exit(0);
         }
         
-        if(mybind(s, &a) < 0) {
+        if(rcsBind(s, &a) < 0) {
             fprintf(stderr, "mybind() failed. Exiting...\n");
             exit(0);
         }

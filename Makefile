@@ -1,45 +1,49 @@
-# makefile must have the following two targets:
-# clean = remove all .o, executable and .a files
-# librcs.a. archive file that has all the RCS functions
+CXX = g++								# compiler. TODO confirm that g++ runs on ecelinux
+CXXFLAGS = -g -Wall -Wno-unused-label -MMD	# compiler flags
 
-XCC = g++
-CFLAGS  = -c
-SOURCES = mybind.c ucp.c rcs.cc
-
-all: librcs.a test rcstest
-
-librcs.a: rcs.o
-	ar -rcs librcs.a rcs.o
-
-test: client server
-
-client: rcs.o sample_client.o
-	$(XCC) rcs.o sample_client.o -o tc
-
-sample_client.o: sample_client.cc
-	$(XCC) $(CFLAGS) sample_client.cc
-
-server: rcs.o sample_server.o
-	$(XCC) rcs.o sample_server.o -o ts
-
-sample_server.o: sample_server.cc
-	$(XCC) $(CFLAGS) sample_server.cc
-
-rcstest: rcs_client rcs_server
-
-rcs_client: rcs.o rcs_client.o
-	$(XCC) rcs.o rcs_client.o -o rcsc -lpthread
-
-rcs_client.o: rcs_client.c
-	$(XCC) $(CFLAGS) rcs_client.c
-
-rcs_server: rcs.o rcs_server.o
-	$(XCC) rcs.o rcs_server.o -o rcss -lpthread
-
-rcs_server.o: rcs_server.c
-	$(XCC) $(CFLAGS) rcs_server.c
+LIB_FILES = mybind.c ucp.c rcs.cc
+LIB_OBJS = mybind.o ucp.o rcs.o
+LIB = librcs.a
+EXECS = ${LIB} rcsc rcss
 
 
 
-clean:
-	-rm -f *.o *.a
+#############################################################
+
+.PHONY : clean
+
+all: librcs.a rcs_client rcs_server
+
+librcs.a : ${LIB_FILES}
+	${CXX} -c $^  
+	ar -rcs ${LIB} ${LIB_OBJS}
+	
+###########tests
+	
+rcsapp : clean librcs.a rcs_client rcs_server
+	
+rcs_client: rcs_client.c
+	${CXX}  -o rcsc $^ -L. -lrcs -lpthread 
+	
+rcs_server: rcs_server.c
+	${CXX}  -o rcss $^ -L. -lrcs -lpthread
+
+###########objs
+	
+mybind.o: mybind.c
+	${CXX} -c $^
+
+ucp.o : ucp.c 
+	${CXX} -c $^
+
+rcs.o: rcs.cc 
+	${CXX} -c $^
+	
+clean :	
+	rm -f *.d *.o ${EXECS}
+
+
+	
+
+
+
