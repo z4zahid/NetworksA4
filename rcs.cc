@@ -43,7 +43,8 @@ struct sockaddr_in getConnectionAddr(int socketID) {
 		cout << "conn socket " << connections.at(i).socketID << endl;
         if ((connections.at(i)).socketID == socketID) {
    			cout << "GET: " << inet_ntoa(connections.at(i).destination.sin_addr) << " scoket " << connections.at(i).socketID <<  endl;
-            return connections.at(i).destination;
+            pthread_mutex_unlock(&lock);
+			return connections.at(i).destination;
         }
     }
     pthread_mutex_unlock(&lock);
@@ -172,13 +173,16 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     return 0;
 }
 
-void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr) {
+int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr) {
 
     int size = MAX_PACKET_SIZE + 16;
     char data[size]; 
     memset(data, 0, size);
     int bytes = ucpRecvFrom(socketID, data, size, addr);
 	cout << "bytes rcv: " << bytes << endl;
+	if (bytes < 0)
+		return -1;
+
 	cout << errno << " " <<  strerror(errno) << endl;
 
     memcpy(&packet->sequenceNum, &data[0], sizeof(int));
@@ -189,7 +193,11 @@ void receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* add
     cout << "rcv: checksum: " << packet->checksum << endl;
     memcpy(&packet->packetLen, &data[12], sizeof(int));
     cout << "rcv: len: " << packet->packetLen << endl;
-    memcpy(&packet->data, &data[16], packet->packetLen);
+	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE)
+    	memcpy(&packet->data, &data[16], packet->packetLen);
+	
+	return 0;
+
 }
 
 void sendDataPacket(int socketID, DataPacket *packet) {
@@ -211,6 +219,10 @@ int getTotalPackets(int numBytes) {
     
 // let's just sum them, ucpSend corrupts each packet, very unlikely this hash will fail
 int getChecksum(const void* packet, int size) {
+
+	if (size <0 || size > MAX_PACKET_SIZE)
+		return -1;
+
     int sum = 0, i;
     char* it = (char*)packet;
     for (i = 0; i< size; i++) {
@@ -222,6 +234,12 @@ int getChecksum(const void* packet, int size) {
 }
 
 int IsPacketCorrupted(DataPacket packet) {
+	
+	if (packet.packetLen < 0) {
+		cout << "bad length" << endl;
+		return 1;
+	}
+
 	cout << "checksum " << packet.checksum << endl;
     //checksum
     if (getChecksum(packet.data, packet.packetLen) != packet.checksum) {
@@ -264,8 +282,10 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         
         DataPacket packet;
         struct sockaddr_in addr;
-        receiveDataPacket(socketID, &packet, &addr);
+        int success = receiveDataPacket(socketID, &packet, &addr);
         
+		if (success < 0)
+			continue;
         /*if (expectedBytes == 0) {
 			bytesReceived = 0;
             expectedBytes = packet.totalBytes;
@@ -338,9 +358,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
 
 int allRetransmitsTimedOut(int retransmits[], int size) {
     int i;
-	cout << "size " << size << endl;
     for ( i=0; i<size; i++) {
-			cout << " packet " << i << " retransmtis left " << retransmits[i] << endl;
         if (retransmits[i] < MAX_RETRANSMIT){
             return 0; 
  	   }
@@ -465,21 +483,22 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
             } else {
                 // case 2: this is greater than the ACK we expect -> retransmit ones in middle
-                cout << "expected ACK" << curWindowLo << endl;
-                for (i = curWindowLo; i<seq;i++) {
+                cout << "expected ACK" << curWindowLo << " seq " << seq << endl;
+                i = curWindowLo;
+				//for (i = curWindowLo; i<seq;i++) {
                     if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
 						sendDataPacket(socketID, &dataPackets.at(i));
                         retransmits[i] = retransmits[i] + 1;
                     }
-                }
+                //}
             }
         }
         else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
             int i = curWindowLo;
-            cout << "no ACK " << curWindowLo << " isRcv " << rcvPackets[i] << " retransmits " << retransmits[i] <<  endl;
+            cout << "no ACK " <<  endl;
             if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
-               cout << "retransmitted " << i << " times " << retransmits[i] << endl;
+               cout << "rexmitting " << i << " times " << retransmits[i] << endl;
                 sendDataPacket(socketID, &dataPackets.at(i));
                 retransmits[i] = retransmits[i] + 1;
             }
