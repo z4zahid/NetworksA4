@@ -402,10 +402,11 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         for (i=0; i<index; i++){
             iterate++;
         }
-
+	
 	memcpy(&packet.data[DATA_CLOSE], 0, sizeof(char));
  
         packet.checksum = getChecksum(iterate, packet.packetLen);
+cout << "Y'okay" << endl;
 
         memcpy(&packet.data[DATA_SEQNUM], &packet.sequenceNum, sizeof(int));
         int seq;
@@ -444,8 +445,9 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     
     vector<DataPacket> dataPackets;
     int numPackets = getTotalPackets(numBytes);
-    populateDataPackets(sendBuffer, numBytes, socketID, &dataPackets);
-
+	cout << "POPULATE " << endl;
+   	 populateDataPackets(sendBuffer, numBytes, socketID, &dataPackets);
+	cout << "POPULATE OKAY " << endl;
     //let's send out all the packets and then we can wait for them
     int curSequenceNum = 0, i;
     for (i = 0; i<numPackets;i++) {
