@@ -324,7 +324,6 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 ack[PACKET_LEN] = packet.packetLen;
                 cout << "rcv: ACK" << endl;
                 ucpSendTest(socketID, &ack, sizeof(ack), &addr);
-
                 //If the packet was not previously received, it is buffered.
                 if (packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
@@ -332,6 +331,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                     cout << "bytesReceived: " << bytesReceived << endl;
                 }
 
+//		cout << "TEST OKAY " << endl;
                 if (packet.sequenceNum == rcvBase) {
                     // deliver this packet and any previously buffered and consecutively numbered packets
                     int i = packet.sequenceNum;
@@ -402,11 +402,10 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         for (i=0; i<index; i++){
             iterate++;
         }
-	
-	memcpy(&packet.data[DATA_CLOSE], 0, sizeof(char));
+	char zero = 0;	
+	memcpy(&packet.data[DATA_CLOSE], &zero, sizeof(char));
  
         packet.checksum = getChecksum(iterate, packet.packetLen);
-cout << "Y'okay" << endl;
 
         memcpy(&packet.data[DATA_SEQNUM], &packet.sequenceNum, sizeof(int));
         int seq;
