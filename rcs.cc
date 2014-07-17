@@ -409,7 +409,7 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         memcpy(&len, &packet.data[DATA_PKTLEN], sizeof(int));
         cout << "packetLen " << packet.packetLen << " copied: " << len << endl;
 
-        memcpy(&packet.data[DATA_PKTLEN], iterate, packet.packetLen);
+        memcpy(&packet.data[DATA_PKTDATA], iterate, packet.packetLen);
         
         packets->push_back(packet);
     }
