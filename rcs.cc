@@ -434,27 +434,18 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     int curWindowHi = (numPackets < (WINDOW_SIZE - 1))? numPackets : WINDOW_SIZE-1;
     int packetsReceived = 0;
     int i;
+
+    //start off by sending enough packets for the current window
+    for (i = curWindowLo; i<curWindowHi;i++) {
+        if (rcvPackets[i] == 0) {
+            sendDataPacket(socketID, &dataPackets.at(i));
+        }
+    }            
    
     cout << "ACK rcv start" << endl;
     //now we receive them and move around our window accordingly
     while (bytesReceived < numBytes && !allRetransmitsTimedOut(retransmits, numPackets)) {
-        
-		if (rcvPackets[curWindowLo] == 0){
-			int j = curWindowLo + (retransmits[curWindowLo] == MAX_RETRANSMIT);
-			while (i< numPackets && rcvPackets[j] != 0) {
-				j++;
-			}
-			int move = j - curWindowLo;
-			curWindowLo = ((curWindowLo + move)> numPackets)? numPackets: curWindowHi + move;
-			curWindowHi = ((curWindowHi + move)> numPackets)? numPackets : curWindowHi + move; 
-
-            for (i = curWindowLo; i<curWindowHi;i++) {
-                if (rcvPackets[i] == 0) {
-                    sendDataPacket(socketID, &dataPackets.at(i));
-                }
-	   	   }
-        }
-
+    
 		ucpSetSockRecvTimeout(socketID, ACK_TIMEOUT);
 
         struct sockaddr_in addr;
@@ -485,7 +476,15 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                 int moveForwardBy = i - seq; 
                 curWindowLo = ((curWindowLo + moveForwardBy) > numPackets)? numPackets: curWindowLo + moveForwardBy;
                 cout << "exact ACK new window lo " << curWindowLo << " + " << moveForwardBy <<  endl;
+                int oldWindowHi = curWindowHi;
                 curWindowHi = ((curWindowHi + moveForwardBy) > numPackets )? numPackets: curWindowHi + moveForwardBy;
+
+                for (i = oldWindowHi; i<curWindowHi;i++) {
+                    if (rcvPackets[i] == 0) {
+                        sendDataPacket(socketID, &dataPackets.at(i));
+                    }
+                }    
+
             } else {
                 // case 2: this is greater than the ACK we expect -> retransmit ones in middle
                 cout << "expected ACK" << curWindowLo << " seq " << seq << endl;
