@@ -156,7 +156,8 @@ void *serviceConnection(void *arg) {
             cout << "Starting Send/Receive testing" << endl;
             char buffer[1024];
             rcsRecv(s, &buffer,1024 ); 
-        }
+        	cout << "COPIED buffer: " << buffer << endl;
+		}
  
         return 0;
     }

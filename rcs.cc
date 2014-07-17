@@ -207,9 +207,10 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
     cout << "rcv: checksum: " << packet->checksum << endl;
     memcpy(&packet->packetLen, &data[12], sizeof(int));
     cout << "rcv: len: " << packet->packetLen << endl;
-	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE)
+	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE) {
     	memcpy(&packet->data, &data[16], packet->packetLen);
-	
+		cout << "rcv: buffer " << packet->data << endl;
+	}
 	return 0;
 
 }
@@ -333,18 +334,18 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
 
                 if (packet.sequenceNum == rcvBase) {
                     // deliver this packet and any previously buffered and consecutively numbered packets
-                    int i = packet.sequenceNum;
-                    while(packets[i].sequenceNum < 0) {
+                    int i = packet.sequenceNum, j;
+                    while( i< packets.size() && packets[i].sequenceNum >= 0) {
 
                         DataPacket p = packets[i];
                         int index = p.sequenceNum*MAX_PACKET_SIZE;
                         char* iterate = (char*)rcvBuffer;
-                        for (i=0; i<index; i++){
+						for (j=0; j<index; j++){
                             iterate++;
                         }
 
                         cout << "copy to rcv buffer " << endl;
-                        memcpy(iterate, &p.data[16], p.packetLen);
+                        memcpy(iterate, &packet.data, p.packetLen);
                     
                         i++;
                     }
@@ -425,7 +426,7 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         cout << "packetLen " << packet.packetLen << " copied: " << len << endl;
 
         memcpy(&packet.data[16], iterate, packet.packetLen);
-        
+		cout <<"BUFFER " << packet.data[16] << " sndBuffer " << (char*)sendBuffer  << " iterate " << iterate <<  endl;        
         packets->push_back(packet);
     }
 }
