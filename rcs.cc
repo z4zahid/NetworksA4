@@ -25,6 +25,16 @@ void addConnection(Connection connection) {
     pthread_mutex_unlock(&lock);
 }
 
+Connection getConnection(int socketID) {
+    pthread_mutex_lock(&lock);
+    for (int i = 0 ; i < connections.size(); i++) {
+        if ((connections.at(i)).socketID == socketID) {
+            return connections.at(i);
+        }
+    }
+    pthread_mutex_unlock(&lock);
+}
+
 void removeConnection(int socketID) {
     pthread_mutex_lock(&lock);
     for (int i = 0 ; i < connections.size(); i++) {
@@ -116,7 +126,11 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     while (true) {
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, addr);
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, ackAddr);
-        if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
+	if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[CLOSE_BIT] == CLOSE_SET) {
+	  sendBuf[CLOSE_ACK] = CLOSE_SET;
+	  ucpSendTo(socketID, sendBuf, BUFFER_SIZE, ackAddr);
+	  break;
+	} else if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[ACK_BIT] == ACK_SET && receiveBuf[ACK_NUM] == seq_num + 1) {
             connection.ack = true;
             break;
         }
@@ -510,7 +524,29 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
 //closes an RCS socket descriptor
 int rcsClose(int socketID) {
+    // Send message to the socketID
+    Connection conn = getConnection(socketID);
+    char receiveBuf[BUFFER_SIZE];
+ 
+    char sendBuf[BUFFER_SIZE];
+    sendBuf[SYN_BIT] = 0;
+    sendBuf[ACK_BIT] = 0;
+    sendBuf[CHK_SUM] = CHK_SET;
+    sendBuf[CLOSE_BIT] = CLOSE_SET;
+
+    ucpSetSockRecvTimeout(socketID, 1000);
+    memset(receiveBuf, 0, BUFFER_SIZE);
+    
+    struct sockaddr_in * ackAddr;
+    for (int i = 0; i < MAX_RETRANSMIT; i++) {
+        ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &(conn.destination));
+        ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, ackAddr);
+        if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[CLOSE_ACK] == CLOSE_SET) {
+            break;
+        }
+    }
     removeConnection(socketID);
-	return ucpClose(socketID);
+
+    return ucpClose(socketID);
 } 
 

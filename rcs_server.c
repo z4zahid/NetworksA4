@@ -157,6 +157,6 @@ void *serviceConnection(void *arg) {
             char buffer[1024];
             rcsRecv(s, &buffer,1024 ); 
         }
-        
+ 
         return 0;
     }

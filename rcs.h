@@ -7,19 +7,22 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define SYN_BIT 0
-#define ACK_BIT 1
-#define SEQ_NUM 2
-#define ACK_NUM 3
-#define CHK_SUM 4
-#define DATA_INDEX 5
-#define HEADER_SIZE 6
+#define CLOSE_BIT 0
+#define CLOSE_ACK 1
+#define SYN_BIT 2
+#define ACK_BIT 3
+#define SEQ_NUM 4
+#define ACK_NUM 5
+#define CHK_SUM 6
+#define DATA_INDEX 7
+#define HEADER_SIZE 8
 
-#define BUFFER_SIZE 518 // 512 + HEADER_SIZE
+#define BUFFER_SIZE 520 // 512 + HEADER_SIZE
 
 #define ACK_SET 'a'
 #define SYN_SET 's'
 #define CHK_SET 'c'
+#define CLOSE_SET 'x'
 
 //must be less than or equal to half the size of the sequence number space
 #define WINDOW_SIZE 5
@@ -32,6 +35,7 @@
 
 typedef struct datapacket {
     char data[MAX_PACKET_SIZE + 16];
+    char closeBit;
     int sequenceNum;
     int checksum;
     int totalBytes;
@@ -49,7 +53,7 @@ typedef struct conn {
     struct sockaddr_in destination;
     int socketID;
     bool ack;
-	int ackNum;
+    int ackNum;
     State state; 
 } Connection;
 
