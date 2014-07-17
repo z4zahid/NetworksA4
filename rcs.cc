@@ -446,6 +446,16 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     //now we receive them and move around our window accordingly
     while (bytesReceived < numBytes && !allRetransmitsTimedOut(retransmits, numPackets)) {
     
+        if (retransmits[curWindowLo] == MAX_RETRANSMIT){
+            int j = curWindowLo + 1;
+            while (rcvPackets[j] != 0) {
+                j++;
+            }
+            int move = j - curWindowLo;
+            curWindowLo = ((curWindowLo + move)> numPackets)? numPackets: curWindowHi + move;
+            curWindowHi = ((curWindowHi + move) > numPackets)? numPackets : curWindowHi + move;
+        }
+
 		ucpSetSockRecvTimeout(socketID, ACK_TIMEOUT);
 
         struct sockaddr_in addr;
