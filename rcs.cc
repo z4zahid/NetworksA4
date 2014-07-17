@@ -248,14 +248,20 @@ int getChecksum(const void* packet, int size) {
     return sum;
 }
 
-int IsPacketCorrupted(DataPacket packet) {
+int IsPacketCorrupted(DataPacket packet, int expectedPackets) {
+
+	//special case (everything in packet is 0)
+	if (packet.sequenceNum == 0 && packet.packetLen ==0){// && expectedPackets > 1){
+		cout << "special case" << endl;
+		return 1;
+	}
 	
 	if (packet.packetLen < 0) {
 		cout << "bad length" << endl;
 		return 1;
 	}
 
-	int expectedPackets = getTotalPackets(packet.totalBytes);
+	expectedPackets = getTotalPackets(packet.totalBytes);
 	if( packet.sequenceNum < (expectedPackets-1) && packet.packetLen < MAX_PACKET_SIZE) {
 		cout << "middle sequence number has no length?" << endl;
 		return 1;
@@ -319,7 +325,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
             packets.resize(expectedPackets);
         }*/
         
-		if (!IsPacketCorrupted(packet)) {
+		if (!IsPacketCorrupted(packet, expectedPackets)) {
         if (expectedBytes == 0) {
 			bytesReceived = 0;
             expectedBytes = packet.totalBytes;
@@ -327,7 +333,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         	cout << "expectedBytes: " << expectedBytes << endl;
 		    packets.resize(expectedPackets);
         }
-            if (packet.sequenceNum >= rcvBase && packet.sequenceNum <= rcvBaseHi) {
+            if (packet.sequenceNum >= rcvBase && packet.sequenceNum < expectedPackets){ 
 
                 int ack[2];
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
@@ -362,7 +368,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                     }
                     // moved receive window forward by the number of packets delivered
                     int moveForwardBy = i - packet.sequenceNum; 
-                    rcvBase += moveForwardBy;
+                    rcvBase = i;
                     rcvBaseHi = ((rcvBaseHi + moveForwardBy) > expectedPackets )? expectedPackets: rcvBaseHi + moveForwardBy;
                 } 
             } else if (packet.sequenceNum >= (rcvBase - WINDOW_SIZE) && packet.sequenceNum <= (rcvBase - 1)) {
@@ -456,10 +462,9 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
     //let's send out all the packets and then we can wait for them
     cout << "SENDING numPackets "<< numPackets << " size " << dataPackets.size() << endl;
-    int curSequenceNum = 0, i;
+    int i;
     for (i = 0; i<numPackets;i++) {
 		sendDataPacket(socketID, &dataPackets.at(i));
-        curSequenceNum++;
     }
 
     int rcvPackets[numPackets];
@@ -476,12 +481,14 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
     while (bytesReceived < numBytes && !allRetransmitsTimedOut(retransmits, numPackets)) {
         
 		if (retransmits[curWindowLo] == MAX_RETRANSMIT){
+			cout << "looking for new wndow low " << endl;
 			int j = curWindowLo + 1;
-			while (rcvPackets[j] != 0) {
+			while (j < numPackets && rcvPackets[j] != 0) {
 				j++;
 			}
+			cout << "new window " << j << endl;
 			int move = j - curWindowLo;
-			curWindowLo = ((curWindowLo + move)> numPackets)? numPackets: curWindowHi + move;
+			curWindowLo = j;//((curWindowLo + move)> numPackets)? numPackets: curWindowHi + move;
 			curWindowHi = ((curWindowHi + move) > numPackets)? numPackets : curWindowHi + move; 
 		}
 
@@ -496,7 +503,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             cout << "ACK: " << seq << " ackLen " << ack[PACKET_LEN] <<  endl;
 
             // if in current window, mark packet as received
-            if (seq >= curWindowLo && seq <= curWindowHi) {
+            if (seq >= curWindowLo && seq < numPackets) {
                 if (rcvPackets[seq]== 0 && ack[PACKET_LEN] <= MAX_PACKET_SIZE) {
                     bytesReceived += ack[PACKET_LEN];
                     cout << "bytesReceived: " << bytesReceived << endl;
@@ -511,9 +518,10 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                 while(i< numPackets && rcvPackets[i] != 0) {
                     i++;
                 }
+				cout << "18 " << rcvPackets[18] << endl;
 				cout << "i " << i << " seq " << seq << endl;
-                int moveForwardBy = i - seq; 
-                curWindowLo = ((curWindowLo + moveForwardBy) > numPackets)? numPackets: curWindowLo + moveForwardBy;
+                int moveForwardBy = (i - seq); 
+                curWindowLo = i;//((curWindowLo + moveForwardBy) > numPackets)? numPackets: curWindowLo + moveForwardBy;
                 cout << "exact ACK new window lo " << curWindowLo << " + " << moveForwardBy <<  endl;
                 curWindowHi = ((curWindowHi + moveForwardBy) > numPackets )? numPackets: curWindowHi + moveForwardBy;
 				cout << "windowhi "<< curWindowHi << endl;
