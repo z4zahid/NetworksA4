@@ -453,7 +453,12 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             }
             int move = j - curWindowLo;
             curWindowLo = ((curWindowLo + move)> numPackets)? numPackets: curWindowHi + move;
+			int oldWindowHi = curWindowHi;
             curWindowHi = ((curWindowHi + move) > numPackets)? numPackets : curWindowHi + move;
+			for(j=oldWindowHi; j<curWindowHi; j++) {
+				cout << "SEND " << j << endl;
+				sendDataPacket(socketID, &dataPackets.at(i));
+			}
         }
 
 		ucpSetSockRecvTimeout(socketID, ACK_TIMEOUT);
@@ -490,7 +495,8 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                 curWindowHi = ((curWindowHi + moveForwardBy) > numPackets )? numPackets: curWindowHi + moveForwardBy;
 
                 for (i = oldWindowHi; i<curWindowHi;i++) {
-                    if (rcvPackets[i] == 0) {
+                    cout << "NEW " << i << endl;
+					if (rcvPackets[i] == 0) {
                         sendDataPacket(socketID, &dataPackets.at(i));
                     }
                 }    
@@ -500,7 +506,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                 cout << "expected ACK" << curWindowLo << " seq " << seq << endl;
                 i = curWindowLo;
                     if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
-                        cout << "rexmitting " << i << " times " << retransmits[i] << endl;
+                        cout << "RETRANS " << i << " times " << retransmits[i] << endl;
 						sendDataPacket(socketID, &dataPackets.at(i));
                         retransmits[i] = retransmits[i] + 1;
                     }
@@ -511,7 +517,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             int i = curWindowLo;
             cout << "no ACK " << endl;// size" << dataPackets.size() <<  endl;
             if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
-                cout << "rexmitting " << i << " times " << retransmits[i] << endl;
+                cout << "RETRANS " << i << " times " << retransmits[i] << endl;
                 sendDataPacket(socketID, &dataPackets.at(i));
                 retransmits[i] = retransmits[i] + 1;
             }
