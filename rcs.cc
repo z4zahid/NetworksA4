@@ -334,7 +334,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             } else {
                 // case 2: this is greater than the ACK we expect -> retransmit ones in middle
                 i = curWindowLo;
-                if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
+                if (i < dataPackets.size() && rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
 					sendDataPacket(socketID, &dataPackets.at(i));
                     retransmits[i] = retransmits[i] + 1;
                 }
@@ -343,7 +343,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
         else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
             int i = curWindowLo;
-            if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
+            if (i < dataPackets.size() && rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT ) {
                 sendDataPacket(socketID, &dataPackets.at(i));
                 retransmits[i] = retransmits[i] + 1;
             }
