@@ -1,8 +1,8 @@
 CXX = g++								# compiler. TODO confirm that g++ runs on ecelinux
 CXXFLAGS = -g -Wall -Wno-unused-label -MMD	# compiler flags
 
-LIB_FILES = mybind.c ucp.c rcs.cc
-LIB_OBJS = mybind.o ucp.o rcs.o
+LIB_FILES = mybind.c ucp.c lib.cc rcs.cc
+LIB_OBJS = mybind.o ucp.o lib.o rcs.o
 LIB = librcs.a
 EXECS = ${LIB} rcsc rcss
 
@@ -29,7 +29,10 @@ rcs_server: rcs_server.c
 	${CXX}  -o rcss $^ -L. -lrcs -lpthread
 
 ###########objs
-	
+
+lib.o: lib.c
+	${CXX} -c $^
+
 mybind.o: mybind.c
 	${CXX} -c $^
 
