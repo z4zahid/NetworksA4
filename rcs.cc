@@ -317,6 +317,13 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
         ssize_t bytes = ucpRecvFrom(socketID, &ack, sizeof(ack), &addr);
         // ACK received:
         if (bytes > 0) {
+            
+            if (ack[CLOSE_BIT] == CLOSE_SET) {
+                char sendBuf[BUFFER_SIZE];
+                sendBuf[CLOSE_ACK] = CLOSE_SET;
+                ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &addr);
+                break;
+            }
 
             int seq = ack[SEQUENCE_NUM];
             // if in current window, mark packet as received
@@ -345,10 +352,6 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                     retransmits[i] = retransmits[i] + 1;
                 }
             }
-        } else if (ack[CLOSE_BIT] == CLOSE_SET) {
-                char sendBuf[BUFFER_SIZE];
-                sendBuf[CLOSE_ACK] = CLOSE_SET;
-                ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &addr);
         } else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
             int i = curWindowLo;
@@ -379,6 +382,7 @@ int rcsClose(int socketID) {
     
     struct sockaddr_in ackAddr;
     for (int i = 0; i < MAX_RETRANSMIT; i++) {
+	cout << "SEND THE THING " << endl;
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &(conn.destination));
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, &ackAddr);
         if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[CLOSE_ACK] == CLOSE_SET) {
@@ -389,6 +393,9 @@ int rcsClose(int socketID) {
     cout << "removing connection" << endl;
     removeConnection(socketID);
     cout << "closing connection" << endl;
-    return ucpClose(socketID);
+   int u = ucpClose(socketID);
+	cout << "OKAY " << endl;
+
+    return u;
 } 
 
