@@ -377,10 +377,10 @@ int rcsClose(int socketID) {
     ucpSetSockRecvTimeout(socketID, 1000);
     memset(receiveBuf, 0, BUFFER_SIZE);
     
-    struct sockaddr_in * ackAddr;
+    struct sockaddr_in ackAddr;
     for (int i = 0; i < MAX_RETRANSMIT; i++) {
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &(conn.destination));
-        ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, ackAddr);
+        ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, &ackAddr);
         if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[CLOSE_ACK] == CLOSE_SET) {
             cout << "close been receivied, breaking now" << endl;
 	    break;
