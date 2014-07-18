@@ -27,6 +27,7 @@ extern int rcsAccept (int , struct sockaddr_in *);
 extern int rcsConnect (int , const struct sockaddr_in *);
 extern int rcsRecv (int , void *, int );
 extern int rcsSend(int,const void *,int);
+extern int rcsClose(int);
 
 using namespace std;
 
