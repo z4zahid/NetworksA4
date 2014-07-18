@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "ucp.c"
 
 #define CLOSE_BIT 0
 #define CLOSE_ACK 1
@@ -80,6 +81,6 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr);
 int rcsRecv(int socketID, void * rcvBuffer, int maxBytes);
 int rcsSend(int socketID, const void * sendBuffer, int numBytes);
 int rcsClose(int socketID);
-
+struct sockaddr_in getConnectionAddr(int socketID);
 #endif
 

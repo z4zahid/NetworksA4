@@ -1,5 +1,11 @@
 #include "lib.h"
 #include "rcs.h"
+//#include "ucp.c"
+#include <iostream>
+#include <cstring>
+#include <vector>
+
+using namespace std;
 
 void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vector<DataPacket>* packets) {
 
