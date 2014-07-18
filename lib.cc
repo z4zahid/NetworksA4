@@ -10,6 +10,53 @@ using namespace std;
 extern ssize_t ucpRecvFrom(int sockfd, void *buf, int len, struct sockaddr_in *from);
 extern int ucpSendTest(int sockfd, const void *buf, int len, const struct sockaddr_in *to);
 
+
+
+// vector of sockets
+vector<Connection> connections;
+pthread_mutex_t lock;
+
+
+struct sockaddr_in getConnectionAddr(int socketID) {
+	pthread_mutex_lock(&lock);
+    for (int i = 0 ; i < connections.size(); i++) {
+        if ((connections.at(i)).socketID == socketID) {
+            pthread_mutex_unlock(&lock);
+			return connections.at(i).destination;
+        }
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+void addConnection(Connection connection) {
+    pthread_mutex_lock(&lock);
+    connections.push_back(connection);
+    pthread_mutex_unlock(&lock);
+}
+
+Connection getConnection(int socketID) {
+    pthread_mutex_lock(&lock);
+    for (int i = 0 ; i < connections.size(); i++) {
+        if ((connections.at(i)).socketID == socketID) {
+            pthread_mutex_unlock(&lock);
+            return connections.at(i);
+        }
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+void removeConnection(int socketID) {
+    pthread_mutex_lock(&lock);
+    for (int i = 0 ; i < connections.size(); i++) {
+        if ((connections.at(i)).socketID == socketID) {
+            connections.erase(connections.begin() + i);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+
 void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vector<DataPacket>* packets) {
 
     int i, j;

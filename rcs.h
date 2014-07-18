@@ -9,13 +9,6 @@
 
 //#include "ucp.c"
 
-typedef struct conn {
-    struct sockaddr_in destination;
-    int socketID;
-    bool ack;
-    int ackNum;
-} Connection;
-
 int rcsSocket();
 int rcsBind(int socketID, struct sockaddr_in * addr);
 int rcsGetSockName(int socketID, struct sockaddr_in * addr);
