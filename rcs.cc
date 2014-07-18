@@ -1,4 +1,4 @@
-//#include "ucp.c"
+#include "ucp.c"
 #include "rcs.h"
 #include "lib.h"
 

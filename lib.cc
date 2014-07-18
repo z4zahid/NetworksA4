@@ -7,6 +7,9 @@
 
 using namespace std;
 
+extern ssize_t ucpRecvFrom(int sockfd, void *buf, int len, struct sockaddr_in *from);
+extern int ucpSendTest(int sockfd, const void *buf, int len, const struct sockaddr_in *to);
+
 void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vector<DataPacket>* packets) {
 
     int i, j;
