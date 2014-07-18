@@ -190,16 +190,7 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
 	if (bytes < 0)
 		return RCV_ERROR;
 
-    memcpy(&packet->sequenceNum, &data[0], sizeof(int));
-    memcpy(&packet->totalBytes, &data[4], sizeof(int));
-    memcpy(&packet->checksum, &data[8], sizeof(int));
-    memcpy(&packet->packetLen, &data[12], sizeof(int));
-	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE) {
-    	memcpy(&packet->data, &data[16], packet->packetLen);
-	}
-	cout << errno << " " <<  strerror(errno) << endl;
-
-    memcpy(&packet->closeBit, &data[DATA_CLOSE], sizeof(char));
+      memcpy(&packet->closeBit, &data[DATA_CLOSE], sizeof(char));
     cout << "rcv: closeBit: " << packet->closeBit << endl;
     memcpy(&packet->sequenceNum, &data[DATA_SEQNUM], sizeof(int));
     cout << "rcv: sequenceNum: " << packet->sequenceNum << endl;
@@ -211,7 +202,10 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
     cout << "rcv: len: " << packet->packetLen << endl;
 	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE)
     	memcpy(&packet->data, &data[DATA_PKTDATA], packet->packetLen);
-	
+	 
+	cout << errno << " " <<  strerror(errno) << endl;
+
+
 	return SUCCESS;
 
 }
@@ -279,7 +273,6 @@ int IsPacketCorrupted(DataPacket packet, int expectedPackets) {
 // Data is sent and received reliably, so any byte that is
 // returned by this call should be what was sent, and in the correct order.
 int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
-
     int bytesReceived = -1;
     int rcvBase = 0;
     int rcvBaseHi = (rcvBase + WINDOW_SIZE - 1);
@@ -293,6 +286,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         struct sockaddr_in addr;
         int success = receiveDataPacket(socketID, &packet, &addr);
         
+	cout << "RAWR" << endl;
 		if (success < 0)
 			continue;
 
@@ -317,8 +311,13 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                     bytesReceived += packet.packetLen;
                 }
 
-//		cout << "TEST OKAY " << endl;
-                if (packet.sequenceNum == rcvBase) {
+		if (packet.closeBit == CLOSE_SET) {
+			cout << "CLOSE" << endl;
+                       char sendBuf[BUFFER_SIZE];
+                       sendBuf[CLOSE_ACK] = CLOSE_SET;
+                       ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &addr);
+                      break;
+                } else if (packet.sequenceNum == rcvBase) {
                     // deliver this packet and any previously buffered and consecutively numbered packets
                     int i = packet.sequenceNum, j;
                     while( i< packets.size() && packets[i].sequenceNum >= 0) {
@@ -477,8 +476,11 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                     retransmits[i] = retransmits[i] + 1;
                 }
             }
-        }
-        else {
+        } else if (ack[CLOSE_BIT] == CLOSE_SET) {
+                char sendBuf[BUFFER_SIZE];
+                sendBuf[CLOSE_ACK] = CLOSE_SET;
+                ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &addr);		                break; 
+	} else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
             int i = curWindowLo;
             if (rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {

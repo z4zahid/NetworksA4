@@ -158,6 +158,7 @@ void *serviceConnection(void *arg) {
             rcsRecv(s, &buffer,1024 ); 
         	cout << "COPIED buffer: " << buffer << endl;
 		}
-	    rcsClose(s); 
+	    rcsClose(s);
+	    cout << "CLOSE " << endl; 
         return 0;
     }
