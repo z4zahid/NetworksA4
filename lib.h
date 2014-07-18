@@ -1,7 +1,6 @@
 #ifndef _LIB_
 #define _LIB_
 
-#include "rcs.h"
 #include <vector>
 
 void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, std::vector<DataPacket>* packets) ;
