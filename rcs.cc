@@ -382,11 +382,13 @@ int rcsClose(int socketID) {
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &(conn.destination));
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, ackAddr);
         if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[CLOSE_ACK] == CLOSE_SET) {
-            break;
+            cout << "close been receivied, breaking now" << endl;
+	    break;
         }
     }
+    cout << "removing connection" << endl;
     removeConnection(socketID);
-
+    cout << "closing connection" << endl;
     return ucpClose(socketID);
 } 
 

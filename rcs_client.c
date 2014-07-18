@@ -55,11 +55,11 @@ int main(int argc, char *argv[]) {
     a.sin_family = AF_INET;
     a.sin_port = 0;
     a.sin_addr.s_addr = INADDR_ANY;
-    
+    printf("trying to bind\n"); 
     if(rcsBind(s, (struct sockaddr_in *)(&a)) < 0) {
         perror("bind"); exit(1);
     }
-    
+    printf("binding is done\n");
     unsigned char buf[256];
     int nread = -1;
     
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "inet_aton(%s) failed.\n", argv[1]);
         exit(1);
     }
-    
+    printf("trying to connect\n");
     if(rcsConnect(s, (struct sockaddr_in *)(&a)) < 0) {
         perror("connect"); exit(1);
     }
@@ -89,6 +89,6 @@ int main(int argc, char *argv[]) {
     rcsRecv(s, &buffer,1024 ); 
     cout << "COPIED buffer: " << buffer << endl;
     rcsClose(s);
-    
+    cout << "socket closed\n" << endl; 
     return 0;
 }

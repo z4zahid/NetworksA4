@@ -156,8 +156,9 @@ void *serviceConnection(void *arg) {
             cout << "Starting Send/Receive testing" << endl;
             string str = "Well, thats because today is june 24, and as of july 1, i'll be tenured";
             rcsSend(s, str.c_str(), str.length()+1);
-
+		cout << "done sending, going to accept again" << endl;
 		}
-	    rcsClose(s); 
+	    	cout << "closing, client wont be able to connect now" << endl;
+		rcsClose(s); 
         return 0;
     }
