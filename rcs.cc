@@ -78,7 +78,7 @@ int rcsGetSockName(int socketID, struct sockaddr_in * addr){
 int rcsListen(int socketID) {
 
     //success
-    return 0;
+    return SUCCESS;
 }
 
 // accepts a connection request on a socket (the first argument).
@@ -130,7 +130,7 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
         }
     }
     
-    return 0;
+    return SUCCESS;
 }
 
 // connects a client to a server. The socket (first argument) must have been bound beforehand using rcsBind().
@@ -177,7 +177,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     ucpSendTo(socketID, buf, BUFFER_SIZE, addr);
     
 	//success
-    return 0;
+    return SUCCESS;
 }
 
 int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr) {
@@ -188,7 +188,7 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
     int bytes = ucpRecvFrom(socketID, data, size, addr);
 
 	if (bytes < 0)
-		return -1;
+		return RCV_ERROR;
 
     memcpy(&packet->sequenceNum, &data[0], sizeof(int));
     memcpy(&packet->totalBytes, &data[4], sizeof(int));
@@ -212,7 +212,7 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
 	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE)
     	memcpy(&packet->data, &data[DATA_PKTDATA], packet->packetLen);
 	
-	return 0;
+	return SUCCESS;
 
 }
 
@@ -235,7 +235,7 @@ int getTotalPackets(int numBytes) {
 int getChecksum(const void* packet, int size) {
 
 	if (size <0 || size > MAX_PACKET_SIZE)
-		return -1;
+		return CHECKSUM_CORRUPTED;
 
     int sum = 0, i;
     char* it = (char*)packet;
@@ -250,28 +250,28 @@ int IsPacketCorrupted(DataPacket packet, int expectedPackets) {
 
 	//special case (everything in packet is 0)
 	if (packet.sequenceNum == 0 && packet.packetLen ==0){// && expectedPackets > 1){
-		return 1;
+		return PACKET_CORRUPTED;
 	}
 	
 	if (packet.packetLen < 0) {
-		return 1;
+		return PACKET_CORRUPTED;
 	}
 
 	expectedPackets = getTotalPackets(packet.totalBytes);
 	if( packet.sequenceNum < (expectedPackets-1) && packet.packetLen < MAX_PACKET_SIZE) {
-		return 1;
+		return PACKET_CORRUPTED;
 	}
 
 	if (packet.totalBytes == 0 && packet.sequenceNum > 0) {
-		return 1;
+		return PACKET_CORRUPTED;
 	}
 
     //checksum
     if (getChecksum(packet.data, packet.packetLen) != packet.checksum) {
-        return 1;
+        return PACKET_CORRUPTED;
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 // blocks awaiting data on a socket (first argument).
@@ -356,10 +356,10 @@ int allRetransmitsTimedOut(int retransmits[], int size) {
     int i;
 	for ( i=0; i<size; i++) { 
         if (retransmits[i] < MAX_RETRANSMIT){
-			return 0; 
+			return SUCCESS; 
  	   }
 	}
-    return 1;
+    return ALL_MAX_RETRANSMIT;
 }
 
 void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vector<DataPacket>* packets) {
@@ -407,7 +407,7 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
 int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
    
 	if (numBytes < 1)
-		return 0;
+		return SEND_ZERO_BYTES;
  
     vector<DataPacket> dataPackets;
     int numPackets = getTotalPackets(numBytes);

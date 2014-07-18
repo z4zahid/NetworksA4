@@ -40,6 +40,13 @@
 #define DATA_PKTLEN 13
 #define DATA_PKTDATA 17
 
+#define SUCCESS 0
+#define RCV_ERROR -1
+#define CHECKSUM_CORRUPTED -2
+#define PACKET_CORRUPTED 1
+#define ALL_MAX_RETRANSMIT 2
+#define SEND_ZERO_BYTES -3
+
 typedef struct datapacket {
     char data[MAX_PACKET_SIZE + 16];
     char closeBit;
