@@ -33,6 +33,7 @@ extern int rcsAccept (int , struct sockaddr_in *);
 extern int rcsConnect (int , const struct sockaddr_in *);
 extern int rcsRecv (int , void *, int );
 extern int rcsSend(int,const void *,int);
+extern int rcsClose(int);
 
 using namespace std;
 
@@ -157,6 +158,6 @@ void *serviceConnection(void *arg) {
             rcsRecv(s, &buffer,1024 ); 
         	cout << "COPIED buffer: " << buffer << endl;
 		}
- 
+	    rcsClose(s); 
         return 0;
     }

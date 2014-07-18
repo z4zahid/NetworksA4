@@ -182,7 +182,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
 
 int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr) {
 
-    int size = MAX_PACKET_SIZE + 16;
+    int size = MAX_PACKET_SIZE + 17;
     char data[size]; 
     memset(data, 0, size);
     int bytes = ucpRecvFrom(socketID, data, size, addr);
@@ -197,13 +197,28 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
 	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE) {
     	memcpy(&packet->data, &data[16], packet->packetLen);
 	}
+	cout << errno << " " <<  strerror(errno) << endl;
+
+    memcpy(&packet->closeBit, &data[DATA_CLOSE], sizeof(char));
+    cout << "rcv: closeBit: " << packet->closeBit << endl;
+    memcpy(&packet->sequenceNum, &data[DATA_SEQNUM], sizeof(int));
+    cout << "rcv: sequenceNum: " << packet->sequenceNum << endl;
+    memcpy(&packet->totalBytes, &data[DATA_TOTAL], sizeof(int));
+    cout << "rcv: totalBytes: " << packet->totalBytes << endl;
+    memcpy(&packet->checksum, &data[DATA_CHKSUM], sizeof(int));
+    cout << "rcv: checksum: " << packet->checksum << endl;
+    memcpy(&packet->packetLen, &data[DATA_PKTLEN], sizeof(int));
+    cout << "rcv: len: " << packet->packetLen << endl;
+	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE)
+    	memcpy(&packet->data, &data[DATA_PKTDATA], packet->packetLen);
+	
 	return 0;
 
 }
 
 void sendDataPacket(int socketID, DataPacket *packet) {
 
-    int size = packet->packetLen + 16; //4 ints to be stored as chars
+    int size = packet->packetLen + 17; //4 ints to be stored as chars
 	sockaddr_in addr = getConnectionAddr(socketID);
     ucpSendTest(socketID, packet->data, size, &addr);
 }
@@ -296,13 +311,13 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
                 ucpSendTest(socketID, &ack, sizeof(ack), &addr);
-
                 //If the packet was not previously received, it is buffered.
 				if (packet.sequenceNum < packets.size() && packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
                     bytesReceived += packet.packetLen;
                 }
 
+//		cout << "TEST OKAY " << endl;
                 if (packet.sequenceNum == rcvBase) {
                     // deliver this packet and any previously buffered and consecutively numbered packets
                     int i = packet.sequenceNum, j;
@@ -359,7 +374,7 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         packet.totalBytes = numBytes;
         packet.packetLen = (i == numPackets - 1)? (numBytes - MAX_PACKET_SIZE*i) : MAX_PACKET_SIZE;
 
-        int size = packet.packetLen + 16; //4 ints to be stored as chars
+        int size = packet.packetLen + 17; //4 ints to be stored as chars
         memset(packet.data, 0, size);
 
         int index = i*MAX_PACKET_SIZE;
@@ -367,14 +382,17 @@ void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, vec
         for (j=0; j<index; j++){
             iterate++;
         }
-
+	char zero = 0;	
+	memcpy(&packet.data[DATA_CLOSE], &zero, sizeof(char));
+ 
         packet.checksum = getChecksum(iterate, packet.packetLen);
 
-        memcpy(&packet.data[0], &packet.sequenceNum, sizeof(int));
-        memcpy(&packet.data[4], &packet.totalBytes, sizeof(int));
-        memcpy(&packet.data[8], &packet.checksum, sizeof(int));
-        memcpy(&packet.data[12], &packet.packetLen, sizeof(int));
-        memcpy(&packet.data[16], iterate, packet.packetLen);
+        memcpy(&packet.data[DATA_SEQNUM], &packet.sequenceNum, sizeof(int));
+        memcpy(&packet.data[DATA_TOTAL], &packet.totalBytes, sizeof(int));
+        memcpy(&packet.data[DATA_CHKSUM], &packet.checksum, sizeof(int));
+        memcpy(&packet.data[DATA_PKTLEN], &packet.packetLen, sizeof(int));
+        memcpy(&packet.data[DATA_PKTDATA], iterate, packet.packetLen);
+        
         packets->push_back(packet);
     }
 }
@@ -393,8 +411,9 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
  
     vector<DataPacket> dataPackets;
     int numPackets = getTotalPackets(numBytes);
-    populateDataPackets(sendBuffer, numBytes, socketID, &dataPackets);
-
+	cout << "POPULATE " << endl;
+   	 populateDataPackets(sendBuffer, numBytes, socketID, &dataPackets);
+	cout << "POPULATE OKAY " << endl;
     //let's send out all the packets and then we can wait for them
     int i;
     for (i = 0; i<numPackets;i++) {

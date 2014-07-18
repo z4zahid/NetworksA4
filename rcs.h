@@ -33,6 +33,13 @@
 #define SEQUENCE_NUM 0
 #define PACKET_LEN 1
 
+#define DATA_CLOSE 0
+#define DATA_SEQNUM 1
+#define DATA_TOTAL 5
+#define DATA_CHKSUM 9
+#define DATA_PKTLEN 13
+#define DATA_PKTDATA 17
+
 typedef struct datapacket {
     char data[MAX_PACKET_SIZE + 16];
     char closeBit;
