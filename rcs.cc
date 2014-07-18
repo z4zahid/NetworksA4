@@ -10,6 +10,8 @@
 
 using namespace std;
 
+extern int errno;
+
 char serverSeq = 0;
 char clientSeq = 0;
 

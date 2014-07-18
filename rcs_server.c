@@ -154,9 +154,9 @@ void *serviceConnection(void *arg) {
             }*/
 
             cout << "Starting Send/Receive testing" << endl;
-            char buffer[1024];
-            rcsRecv(s, &buffer,1024 ); 
-        	cout << "COPIED buffer: " << buffer << endl;
+            string str = "Well, thats because today is june 24, and as of july 1, i'll be tenured";
+            rcsSend(s, str.c_str(), str.length()+1);
+
 		}
 	    rcsClose(s); 
         return 0;

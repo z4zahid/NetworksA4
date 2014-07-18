@@ -84,11 +84,10 @@ int main(int argc, char *argv[]) {
     }*/
     
     cout << "Starting Send/Receive testing" << endl;
-    string str;
-    rcsSend(s, str.c_str(), str.length()+1);
-
-    shutdown(s, SHUT_RDWR);
-    close(s);
+    char buffer[1024];
+    rcsRecv(s, &buffer,1024 ); 
+    cout << "COPIED buffer: " << buffer << endl;
+    rcsClose(s);
     
     return 0;
 }

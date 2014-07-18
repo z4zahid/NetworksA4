@@ -7,8 +7,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-//#include "ucp.c"
-
 typedef struct conn {
     struct sockaddr_in destination;
     int socketID;

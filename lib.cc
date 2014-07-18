@@ -1,12 +1,13 @@
 #include "lib.h"
 #include "rcs.h"
-//#include "ucp.c"
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <cerrno>
 
 using namespace std;
 
+extern int errno;
 extern ssize_t ucpRecvFrom(int sockfd, void *buf, int len, struct sockaddr_in *from);
 extern int ucpSendTest(int sockfd, const void *buf, int len, const struct sockaddr_in *to);
 
@@ -52,9 +53,11 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
     memset(data, 0, size);
     int bytes = ucpRecvFrom(socketID, data, size, addr);
 
-	if (bytes < 0)
+	if (bytes < 0) {
+        errno = EPERM;
 		return RCV_ERROR;
-
+    }
+    
     memcpy(&packet->closeBit, &data[DATA_CLOSE], sizeof(char));
     cout << "rcv: closeBit: " << packet->closeBit << endl;
     memcpy(&packet->sequenceNum, &data[DATA_SEQNUM], sizeof(int));
@@ -90,8 +93,10 @@ int getTotalPackets(int numBytes) {
 // let's just sum them, ucpSend corrupts each packet, very unlikely this hash will fail
 int getChecksum(const void* packet, int size) {
 
-	if (size <0 || size > MAX_PACKET_SIZE)
+	if (size <0 || size > MAX_PACKET_SIZE) {
+        errno = EINVAL;
 		return CHECKSUM_CORRUPTED;
+    }
 
     int sum = 0, i;
     char* it = (char*)packet;
@@ -104,8 +109,10 @@ int getChecksum(const void* packet, int size) {
 
 int IsPacketCorrupted(DataPacket packet, int expectedPackets) {
 
+    errno = ERANGE;
+
 	//special case (everything in packet is 0)
-	if (packet.sequenceNum == 0 && packet.packetLen ==0){// && expectedPackets > 1){
+	if (packet.sequenceNum == 0 && packet.packetLen ==0){
 		return PACKET_CORRUPTED;
 	}
 	
@@ -127,6 +134,7 @@ int IsPacketCorrupted(DataPacket packet, int expectedPackets) {
         return PACKET_CORRUPTED;
     }
 
+    errno = 0;
     return SUCCESS;
 }
 
@@ -137,5 +145,6 @@ int allRetransmitsTimedOut(int retransmits[], int size) {
 			return SUCCESS; 
  	   }
 	}
+    errno = EPERM;
     return ALL_MAX_RETRANSMIT;
 }
