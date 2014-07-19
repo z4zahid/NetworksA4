@@ -100,20 +100,14 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
 
 	if (bytes < 0) {
         errno = EPERM;
-	cout << "rcv_error" << endl;
 		return RCV_ERROR;
     }
     
     memcpy(&packet->closeBit, &data[DATA_CLOSE], sizeof(char));
-    cout << "rcv: closeBit: " << packet->closeBit << endl;
     memcpy(&packet->sequenceNum, &data[DATA_SEQNUM], sizeof(int));
-    cout << "rcv: sequenceNum: " << packet->sequenceNum << endl;
     memcpy(&packet->totalBytes, &data[DATA_TOTAL], sizeof(int));
-    cout << "rcv: totalBytes: " << packet->totalBytes << endl;
     memcpy(&packet->checksum, &data[DATA_CHKSUM], sizeof(int));
-    cout << "rcv: checksum: " << packet->checksum << endl;
     memcpy(&packet->packetLen, &data[DATA_PKTLEN], sizeof(int));
-    cout << "rcv: len: " << packet->packetLen << endl;
 	if (packet->packetLen > 0 && packet->packetLen <= MAX_PACKET_SIZE)
     	memcpy(&packet->data, &data[DATA_PKTDATA], packet->packetLen);
 	
@@ -158,12 +152,10 @@ int IsPacketCorrupted(DataPacket packet, int expectedBytes, int bytesReceived) {
 
 	//special case (everything in packet is 0)
 	if (packet.sequenceNum == 0 && packet.packetLen ==0){
-		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 	
 	if (packet.packetLen <= 0) {
-		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 
@@ -174,18 +166,15 @@ int IsPacketCorrupted(DataPacket packet, int expectedBytes, int bytesReceived) {
     }
 
 	if( packet.sequenceNum < (expectedPackets-1) && packet.packetLen < MAX_PACKET_SIZE) {
-		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 
 	if (packet.totalBytes == 0 && packet.sequenceNum > 0) {
-		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 
     //checksum
     if (getChecksum(packet.data, packet.packetLen) != packet.checksum) {
-		cout << "corrupted " << endl;
         return PACKET_CORRUPTED;
     }
 
