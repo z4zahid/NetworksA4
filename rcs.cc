@@ -177,7 +177,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 int ack[2];
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
-                ucpSendTest(socketID, &ack, sizeof(ack), &addr);
+                ucpSendTo(socketID, &ack, sizeof(ack), &addr);
                 //If the packet was not previously received, it is buffered.
 				if (packet.sequenceNum < packets.size() && packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
@@ -219,7 +219,7 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
 		int ack[2];
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
-                ucpSendTest(socketID, &ack, sizeof(ack), &addr); 
+                ucpSendTo(socketID, &ack, sizeof(ack), &addr); 
             } else {
                 //ignore
             	cout << "IGNORE " << packet.sequenceNum << endl;

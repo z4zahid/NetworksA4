@@ -48,7 +48,7 @@
 #define INCOMPLETE_SYNACK -4
 
 typedef struct datapacket {
-    char data[MAX_PACKET_SIZE + 16];
+    char data[MAX_PACKET_SIZE + 17];
     char closeBit;
     int sequenceNum;
     int checksum;

@@ -9,9 +9,7 @@ using namespace std;
 
 extern int errno;
 extern ssize_t ucpRecvFrom(int sockfd, void *buf, int len, struct sockaddr_in *from);
-extern int ucpSendTest(int sockfd, const void *buf, int len, const struct sockaddr_in *to);
-
-
+extern int ucpSendTo(int sockfd, const void *buf, int len, const struct sockaddr_in *to);
 
 // vector of sockets
 vector<Connection> connections;
@@ -127,7 +125,7 @@ void sendDataPacket(int socketID, DataPacket *packet) {
 
     int size = packet->packetLen + 17; //4 ints to be stored as chars
 	sockaddr_in addr = getConnectionAddr(socketID);
-    ucpSendTest(socketID, packet->data, size, &addr);
+    ucpSendTo(socketID, packet->data, size, &addr);
 }
 
 int getTotalPackets(int numBytes) {
