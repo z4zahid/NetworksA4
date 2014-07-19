@@ -117,6 +117,5 @@ ssize_t ucpRecvFrom(int sockfd, void *buf, int len, struct sockaddr_in *from)
 int ucpClose(int sockfd)
 {
 	int c = close(sockfd);
-	cout << "RAWR " << endl;
     return c;
 }
