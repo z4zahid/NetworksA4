@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
     
     cout << "Starting Send/Receive testing" << endl;
     char buffer[1024];
-//    rcsRecv(s, &buffer,1024 ); 
+    rcsRecv(s, &buffer,1024 ); 
     cout << "COPIED buffer: " << buffer << endl;
     rcsClose(s);
     cout << "socket closed\n" << endl; 

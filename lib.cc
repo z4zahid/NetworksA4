@@ -55,6 +55,7 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
 
 	if (bytes < 0) {
         errno = EPERM;
+	cout << "rcv_error" << endl;
 		return RCV_ERROR;
     }
     
@@ -107,30 +108,40 @@ int getChecksum(const void* packet, int size) {
     return sum;
 }
 
-int IsPacketCorrupted(DataPacket packet, int expectedPackets) {
+int IsPacketCorrupted(DataPacket packet, int expectedBytes, int bytesReceived) {
 
     errno = ERANGE;
 
 	//special case (everything in packet is 0)
 	if (packet.sequenceNum == 0 && packet.packetLen ==0){
+		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 	
-	if (packet.packetLen < 0) {
+	if (packet.packetLen <= 0) {
+		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 
-	expectedPackets = getTotalPackets(packet.totalBytes);
+	int expectedPackets = getTotalPackets(expectedBytes);
+	if (packet.sequenceNum == (expectedPackets-1) && (expectedBytes - bytesReceived) != packet.packetLen) {
+        //this will force the last packet to be received last, but that way we know its definitely correct?
+	return PACKET_CORRUPTED;
+    }
+
 	if( packet.sequenceNum < (expectedPackets-1) && packet.packetLen < MAX_PACKET_SIZE) {
+		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 
 	if (packet.totalBytes == 0 && packet.sequenceNum > 0) {
+		cout << "corrupted " << endl;
 		return PACKET_CORRUPTED;
 	}
 
     //checksum
     if (getChecksum(packet.data, packet.packetLen) != packet.checksum) {
+		cout << "corrupted " << endl;
         return PACKET_CORRUPTED;
     }
 

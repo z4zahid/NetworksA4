@@ -58,7 +58,7 @@ int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr
 void sendDataPacket(int socketID, DataPacket *packet);
 int getTotalPackets(int numBytes);
 int getChecksum(const void* packet, int size);
-int IsPacketCorrupted(DataPacket packet, int expectedPackets);
+int IsPacketCorrupted(DataPacket packet, int expectedBytes, int);
 int allRetransmitsTimedOut(int retransmits[], int size);
 
 #endif

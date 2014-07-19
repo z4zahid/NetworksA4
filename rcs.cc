@@ -205,12 +205,13 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
 		if (success < 0)
 			continue;
 
-		if (!IsPacketCorrupted(packet, expectedPackets)) {
+		if (!IsPacketCorrupted(packet, expectedBytes, bytesReceived)) {
         
             if (expectedBytes == 0) {
         		bytesReceived = 0;
                 expectedBytes = packet.totalBytes;
                 expectedPackets = getTotalPackets(expectedBytes);
+		cout << "expectedPackets " << expectedPackets << " and bytes " << expectedBytes << endl;
         	    packets.resize(expectedPackets);
             }
 
@@ -224,9 +225,12 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
 				if (packet.sequenceNum < packets.size() && packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
                     bytesReceived += packet.packetLen;
+
+		    cout << "bytes rcv: " << bytesReceived << " packet " << packet.sequenceNum << endl;
                 }
 
                 if (packet.closeBit == CLOSE_SET) {
+		       cout << "cloooosing " << endl;
                        char sendBuf[BUFFER_SIZE];
                        sendBuf[CLOSE_ACK] = CLOSE_SET;
                        ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &addr);
@@ -248,18 +252,21 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                     }
                     // moved receive window forward by the number of packets delivered
                     int moveForwardBy = i - packet.sequenceNum; 
+			cout << "new window " << i << endl;
                     rcvBase = i;
                     rcvBaseHi = ((rcvBaseHi + moveForwardBy) > expectedPackets )? expectedPackets: rcvBaseHi + moveForwardBy;
                 } 
             } else if (packet.sequenceNum >= (rcvBase - WINDOW_SIZE) && packet.sequenceNum <= (rcvBase - 1)) {
                 //return ACK to sender even though we've already ACKED before
-                int ack[2];
+                cout << "ACKED before " << packet.sequenceNum << endl;
+		int ack[2];
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
                 ucpSendTest(socketID, &ack, sizeof(ack), &addr); 
             } else {
                 //ignore
-            }
+            	cout << "IGNORE " << packet.sequenceNum << endl;
+	    }
         }
     }
     return bytesReceived;
@@ -354,6 +361,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             }
         } else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
+	    cout << "no ACK " << endl;
             int i = curWindowLo;
             if (i < dataPackets.size() && rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT ) {
                 sendDataPacket(socketID, &dataPackets.at(i));
