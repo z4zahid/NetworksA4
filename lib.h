@@ -24,7 +24,7 @@
 #define CLOSE_SET 'x'
 
 //must be less than or equal to half the size of the sequence number space
-#define WINDOW_SIZE 5
+#define WINDOW_SIZE 7
 #define MAX_PACKET_SIZE 800
 #define MAX_RETRANSMIT 5
 #define ACK_TIMEOUT 300

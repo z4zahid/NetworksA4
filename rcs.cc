@@ -359,7 +359,7 @@ int rcsClose(int socketID) {
     memset(receiveBuf, 0, BUFFER_SIZE);
     
     struct sockaddr_in ackAddr;
-    for (int i = 0; i < MAX_RETRANSMIT; i++) {
+    for (int i = 0; i < (MAX_RETRANSMIT-2); i++) {
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &(conn.destination));
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, &ackAddr);
         if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[CLOSE_ACK] == CLOSE_SET) {
