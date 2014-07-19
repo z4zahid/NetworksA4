@@ -2,27 +2,27 @@
 #include "rcs.h"
 #include "lib.h"
 
+#include <cerrno>
+#include <cstring>
 #include <iostream>
 #include <pthread.h>
 #include <string>
-#include <cstring>
-#include <cerrno>
 
 using namespace std;
 
-//extern int errno;
 
 char serverSeq = 0;
 char clientSeq = 0;
 
 int counter;
 
-//used to allocate an RCS socket. Returns a socket descriptor (positive integer) on success
+// Allocate an RCS socket.
+// Returns a socket descriptor (positive integer) on success
 int rcsSocket() {
    return ucpSocket();
 } 
 
-//binds an RCS socket (first argument) to the address structure (second argument)
+// Binds an RCS socket (first argument) to the address structure (second argument)
 int rcsBind(int socketID, struct sockaddr_in * addr) {
 
     return ucpBind(socketID, addr);
@@ -41,11 +41,7 @@ int rcsListen(int socketID) {
     return SUCCESS;
 }
 
-// accepts a connection request on a socket (the first argument).
-// This is a blocking call while awaiting connection requests. 
-// The call is unblocked when a connection request is received. 
-// The address of the peer (client) is filled into the second argument. 
-// Returns descriptor to new RCS socket that can be used to rcsSend() and rcsRecv() with the peer (client).
+// Accepts a connection request on a socket (the first argument).
 int rcsAccept(int socketID, struct sockaddr_in *addr) {
     char receiveBuf[BUFFER_SIZE];
     Connection connection;
@@ -93,11 +89,8 @@ int rcsAccept(int socketID, struct sockaddr_in *addr) {
     return SUCCESS;
 }
 
-// connects a client to a server. The socket (first argument) must have been bound beforehand using rcsBind().
-// The second argument identifies the server to which connection should be attempted
+// Connects a client to a server
 int rcsConnect(int socketID, const struct sockaddr_in * addr) {
-    
-    // Set a timeout
     ucpSetSockRecvTimeout(socketID, 3000);
     
     char buf[BUFFER_SIZE];
@@ -140,7 +133,7 @@ int rcsConnect(int socketID, const struct sockaddr_in * addr) {
     return SUCCESS;
 }
 
-// blocks awaiting data on a socket (first argument).
+// Blocks awaiting data on a socket (first argument).
 // Returns the actual amount of data received. “Amount” is the number of bytes. 
 // Data is sent and received reliably, so any byte that is
 // returned by this call should be what was sent, and in the correct order.
@@ -168,7 +161,6 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
         		bytesReceived = 0;
                 expectedBytes = packet.totalBytes;
                 expectedPackets = getTotalPackets(expectedBytes);
-		cout << "expectedPackets " << expectedPackets << " and bytes " << expectedBytes << endl;
         	    packets.resize(expectedPackets);
             }
 
@@ -178,16 +170,14 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
                 ucpSendTo(socketID, &ack, sizeof(ack), &addr);
+                
                 //If the packet was not previously received, it is buffered.
 				if (packet.sequenceNum < packets.size() && packets[packet.sequenceNum].sequenceNum < 0) {
                     packets[packet.sequenceNum] = packet;
                     bytesReceived += packet.packetLen;
-
-		    cout << "bytes rcv: " << bytesReceived << " packet " << packet.sequenceNum << endl;
                 }
 
                 if (packet.closeBit == CLOSE_SET) {
-		       cout << "cloooosing " << endl;
                        char sendBuf[BUFFER_SIZE];
                        sendBuf[CLOSE_ACK] = CLOSE_SET;
                        ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &addr);
@@ -208,22 +198,19 @@ int rcsRecv(int socketID, void * rcvBuffer, int maxBytes) {
                         i++;
                     }
                     // moved receive window forward by the number of packets delivered
-                    int moveForwardBy = i - packet.sequenceNum; 
-			cout << "new window " << i << endl;
+                    int moveForwardBy = i - packet.sequenceNum;
                     rcvBase = i;
                     rcvBaseHi = ((rcvBaseHi + moveForwardBy) > expectedPackets )? expectedPackets: rcvBaseHi + moveForwardBy;
                 } 
             } else if (packet.sequenceNum >= (rcvBase - WINDOW_SIZE) && packet.sequenceNum <= (rcvBase - 1)) {
                 //return ACK to sender even though we've already ACKED before
-                cout << "ACKED before " << packet.sequenceNum << endl;
-		int ack[2];
+                int ack[2];
                 ack[SEQUENCE_NUM] = packet.sequenceNum;
                 ack[PACKET_LEN] = packet.packetLen;
                 ucpSendTo(socketID, &ack, sizeof(ack), &addr); 
             } else {
                 //ignore
-            	cout << "IGNORE " << packet.sequenceNum << endl;
-	    }
+            }
         }
     }
     return bytesReceived;
@@ -243,9 +230,8 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
  
     vector<DataPacket> dataPackets;
     int numPackets = getTotalPackets(numBytes);
-	cout << "POPULATE " << endl;
    	populateDataPackets(sendBuffer, numBytes, socketID, &dataPackets);
-	cout << "POPULATE OKAY " << endl;
+    
     //let's send out all the packets and then we can wait for them
     int i;
     for (i = 0; i<numPackets;i++) {
@@ -309,9 +295,8 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             bytes = ucpRecvFrom(socketID, &ack, sizeof(ack), &addr);
         }
         
-        // ACK received:
+        // ACK received
         if (bytes > 0) {
-            
             if (ack[CLOSE_BIT] == CLOSE_SET) {
                 char sendBuf[BUFFER_SIZE];
                 sendBuf[CLOSE_ACK] = CLOSE_SET;
@@ -348,7 +333,6 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
             }
         } else {
             // case 3: we did not get an ACK back at all -> retransmit the one we're expecting
-	    cout << "no ACK " << endl;
             int i = curWindowLo;
             if (i < dataPackets.size() && rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT ) {
                 sendDataPacket(socketID, &dataPackets.at(i));
@@ -362,7 +346,6 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 
 //closes an RCS socket descriptor
 int rcsClose(int socketID) {
-    // Send message to the socketID
     Connection conn = getConnection(socketID);
     char receiveBuf[BUFFER_SIZE];
  
@@ -377,19 +360,14 @@ int rcsClose(int socketID) {
     
     struct sockaddr_in ackAddr;
     for (int i = 0; i < MAX_RETRANSMIT; i++) {
-	cout << "SEND THE THING " << endl;
         ucpSendTo(socketID, sendBuf, BUFFER_SIZE, &(conn.destination));
         ucpRecvFrom(socketID, receiveBuf, BUFFER_SIZE, &ackAddr);
         if (receiveBuf[CHK_SUM] == CHK_SET && receiveBuf[CLOSE_ACK] == CLOSE_SET) {
-            cout << "close been receivied, breaking now" << endl;
-	    break;
+            break;
         }
     }
-    cout << "removing connection" << endl;
     removeConnection(socketID);
-    cout << "closing connection" << endl;
-   int u = ucpClose(socketID);
-	cout << "OKAY " << endl;
+    int u = ucpClose(socketID);
 
     return u;
 } 

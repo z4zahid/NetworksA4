@@ -1,11 +1,12 @@
 #ifndef _RCS_
 #define _RCS_
 
-#include <vector>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <pthread.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <vector>
+
 
 
 int rcsSocket();

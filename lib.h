@@ -1,10 +1,10 @@
 #ifndef _LIB_
 #define _LIB_
 
-#include <vector>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <vector>
 
 #define CLOSE_BIT 0
 #define CLOSE_ACK 1
@@ -25,7 +25,7 @@
 
 //must be less than or equal to half the size of the sequence number space
 #define WINDOW_SIZE 5
-#define MAX_PACKET_SIZE 5 //800
+#define MAX_PACKET_SIZE 800
 #define MAX_RETRANSMIT 5
 #define ACK_TIMEOUT 300
 
