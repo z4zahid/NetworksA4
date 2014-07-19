@@ -15,50 +15,7 @@ using namespace std;
 char serverSeq = 0;
 char clientSeq = 0;
 
-pthread_mutex_t lock;
 int counter;
-
-// vector of sockets
-vector<Connection> connections;
-
-void addConnection(Connection connection) {
-    pthread_mutex_lock(&lock);
-    connections.push_back(connection);
-    pthread_mutex_unlock(&lock);
-}
-
-Connection getConnection(int socketID) {
-    pthread_mutex_lock(&lock);
-    for (int i = 0 ; i < connections.size(); i++) {
-        if ((connections.at(i)).socketID == socketID) {
-            pthread_mutex_unlock(&lock);
-            return connections.at(i);
-        }
-    }
-    pthread_mutex_unlock(&lock);
-}
-
-void removeConnection(int socketID) {
-    pthread_mutex_lock(&lock);
-    for (int i = 0 ; i < connections.size(); i++) {
-        if ((connections.at(i)).socketID == socketID) {
-            connections.erase(connections.begin() + i);
-            break;
-        }
-    }
-    pthread_mutex_unlock(&lock);
-}
-
-struct sockaddr_in getConnectionAddr(int socketID) {
-	pthread_mutex_lock(&lock);
-    for (int i = 0 ; i < connections.size(); i++) {
-        if ((connections.at(i)).socketID == socketID) {
-            pthread_mutex_unlock(&lock);
-			return connections.at(i).destination;
-        }
-    }
-    pthread_mutex_unlock(&lock);
-}
 
 //used to allocate an RCS socket. Returns a socket descriptor (positive integer) on success
 int rcsSocket() {
@@ -320,8 +277,38 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
 		ucpSetSockRecvTimeout(socketID, ACK_TIMEOUT);
 
         struct sockaddr_in addr;
-        int ack[2];
+        int ack[BUFFER_SIZE];
         ssize_t bytes = ucpRecvFrom(socketID, &ack, sizeof(ack), &addr);
+        
+        // Check if it's an incomplete SYNACK
+        bool retrans = false;
+        while (bytes > 0) {
+            if (ack[SYN_BIT] == SYN_SET && ack[ACK_BIT] == ACK_SET && ack[CHK_SUM] == CHK_SET && ack[SEQ_NUM] == getConnection(socketID).ackNum + 1 ) {
+                // Send the missing ack
+                char buf[BUFFER_SIZE];
+                memset(buf, 0, BUFFER_SIZE);
+                
+                buf[ACK_NUM] = getConnection(socketID).ackNum;
+                buf[ACK_BIT] = ACK_SET;
+                buf[CHK_SUM] = CHK_SET;
+                
+                // Send ACK to the server
+                ucpSendTo(socketID, buf, BUFFER_SIZE, &addr);
+                retrans = true;
+                bytes = ucpRecvFrom(socketID, &ack, sizeof(ack), &addr);
+            } else {
+                break;
+            }
+        }
+        
+        if (retrans) {
+            for (i = 0; i<numPackets;i++) {
+                sendDataPacket(socketID, &dataPackets.at(i));
+            }
+            memset(ack, 0, BUFFER_SIZE);
+            bytes = ucpRecvFrom(socketID, &ack, sizeof(ack), &addr);
+        }
+        
         // ACK received:
         if (bytes > 0) {
             
@@ -355,7 +342,7 @@ int rcsSend(int socketID, const void * sendBuffer, int numBytes) {
                 // case 2: this is greater than the ACK we expect -> retransmit ones in middle
                 i = curWindowLo;
                 if (i < dataPackets.size() && rcvPackets[i] == 0 && retransmits[i] < MAX_RETRANSMIT) {
-					sendDataPacket(socketID, &dataPackets.at(i));
+                    sendDataPacket(socketID, &dataPackets.at(i));
                     retransmits[i] = retransmits[i] + 1;
                 }
             }

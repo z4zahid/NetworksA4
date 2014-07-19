@@ -2,6 +2,9 @@
 #define _LIB_
 
 #include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define CLOSE_BIT 0
 #define CLOSE_ACK 1
@@ -42,6 +45,7 @@
 #define PACKET_CORRUPTED 1
 #define ALL_MAX_RETRANSMIT 2
 #define SEND_ZERO_BYTES -3
+#define INCOMPLETE_SYNACK -4
 
 typedef struct datapacket {
     char data[MAX_PACKET_SIZE + 16];
@@ -53,6 +57,13 @@ typedef struct datapacket {
     datapacket(): sequenceNum(-1) {}
 } DataPacket;
 
+typedef struct conn {
+    struct sockaddr_in destination;
+    int socketID;
+    bool ack;
+    int ackNum;
+} Connection;
+
 void populateDataPackets(const void* sendBuffer, int numBytes, int socketID, std::vector<DataPacket>* packets) ;
 int receiveDataPacket(int socketID, DataPacket *packet, struct sockaddr_in* addr);
 void sendDataPacket(int socketID, DataPacket *packet);
@@ -60,5 +71,10 @@ int getTotalPackets(int numBytes);
 int getChecksum(const void* packet, int size);
 int IsPacketCorrupted(DataPacket packet, int expectedBytes, int);
 int allRetransmitsTimedOut(int retransmits[], int size);
+
+void addConnection(Connection connection);
+Connection getConnection(int socketID);
+void removeConnection(int socketID);
+struct sockaddr_in getConnectionAddr(int socketID);
 
 #endif
